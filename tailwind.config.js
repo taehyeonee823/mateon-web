@@ -1,11 +1,14 @@
+import defaultTheme from 'tailwindcss/defaultTheme'
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
+    fontFamily: {
+      sans: ['Pretendard Variable', 'Pretendard', ...defaultTheme.fontFamily.sans],
+      pretendard: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
+    },
     extend: {
-      fontFamily: {
-        pretendard: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
-      },
       colors: {
         brand: {
           50: '#F0F4FF',
