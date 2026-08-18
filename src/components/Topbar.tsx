@@ -2,7 +2,7 @@ import { BellIcon, ChevronDownIcon, SearchIcon } from './icons'
 
 export default function Topbar() {
   return (
-    <div className="flex items-center gap-6 px-8 py-6">
+    <div className="flex items-center gap-6 px-24 py-6">
       <div className="relative flex-1 max-w-2xl">
         <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" />
         <input
