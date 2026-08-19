@@ -7,6 +7,7 @@ export default {
     fontFamily: {
       sans: ['Pretendard Variable', 'Pretendard', ...defaultTheme.fontFamily.sans],
       pretendard: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
+      'seoul-alrim': ['SeoulAlrim', 'Pretendard Variable', 'sans-serif'],
     },
     extend: {
       colors: {

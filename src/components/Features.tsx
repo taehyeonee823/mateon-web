@@ -1,4 +1,3 @@
-
 export default function Features() {
   return (
     <section id="features" className="bg-brand-50/60 py-24">
