@@ -62,7 +62,7 @@ export default function CTA() {
                 alt=""
                 className="h-5 w-4 object-cover invert"
               />
-              Apple Store에서 다운로드
+              TestFlight로 시작하기git 
             </a>
 
             <button

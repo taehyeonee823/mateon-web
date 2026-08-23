@@ -49,7 +49,7 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-white">
       <Sidebar />
-      <div className="md:pl-60">
+      <div className="md:pl-64">
         <Topbar />
 
         <main className="flex min-h-[70vh] items-center justify-center px-6 py-16">

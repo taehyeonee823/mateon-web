@@ -79,14 +79,16 @@ export default function Topbar() {
   }
 
   return (
-    <div className="flex items-center gap-6 px-24 py-6">
-      <div className="relative flex-1 max-w-2xl">
-        <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" />
-        <input
-          type="text"
-          placeholder="공모전, 분야, 기술, 키워드를 검색해보세요"
-          className="w-full rounded-full border border-brand-100 bg-brand-50/40 py-3 pl-11 pr-4 text-sm text-brand-900 placeholder:text-brand-400 focus:border-brand-300 focus:outline-none"
-        />
+    <div className="flex items-center gap-8 px-24 py-6">
+      <div className="flex flex-1 justify-center">
+        <div className="relative w-full max-w-2xl">
+          <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" />
+          <input
+            type="text"
+            placeholder="공모전, 분야, 기술, 키워드를 검색해보세요"
+            className="w-full rounded-full border border-brand-100 bg-brand-50/40 py-3 pl-11 pr-4 text-sm text-brand-900 placeholder:text-brand-400 focus:border-brand-300 focus:outline-none"
+          />
+        </div>
       </div>
 
       <div

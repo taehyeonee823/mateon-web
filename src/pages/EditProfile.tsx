@@ -115,7 +115,7 @@ export default function EditProfile() {
     return (
       <div className="min-h-screen bg-white">
         <Sidebar />
-        <div className="md:pl-60">
+        <div className="md:pl-64">
           <Topbar />
           <main className="flex min-h-[60vh] items-center justify-center text-brand-500">
             로그인이 필요해요.
@@ -129,7 +129,7 @@ export default function EditProfile() {
   return (
     <div className="min-h-screen bg-white">
       <Sidebar />
-      <div className="md:pl-60">
+      <div className="md:pl-64">
         <Topbar />
 
         <main className="mx-auto max-w-xl px-6 py-12">

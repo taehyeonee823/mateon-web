@@ -11,7 +11,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-white">
       <Sidebar />
-      <div className="md:pl-60">
+      <div className="md:pl-64">
         <Topbar />
         <main>
           <CTA />

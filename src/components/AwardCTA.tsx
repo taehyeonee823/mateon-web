@@ -20,7 +20,7 @@ export default function AwardCTA() {
       <h2 ref={textRef} className="text-4xl font-bold leading-tight text-black sm:text-5xl">
         <span className="text-[#2554F0]">드림이</span>와 함께
         <br />
-        1위 수상을 달성해보세요!
+        1위 수상에 도전해보세요!
       </h2>
     </section>
   )

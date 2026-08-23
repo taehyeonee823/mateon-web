@@ -7,7 +7,7 @@ export default function PageShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-white">
       <Sidebar />
-      <div className="md:pl-60">
+      <div className="md:pl-64">
         <Topbar />
         <main>{children}</main>
         <Footer />

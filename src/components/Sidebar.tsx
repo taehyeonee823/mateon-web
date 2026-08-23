@@ -19,10 +19,10 @@ export default function Sidebar() {
     'flex items-center gap-3 rounded-xl px-4 py-2.5 text-base font-bold text-[#4D4DF1] transition-colors hover:bg-brand-50/60'
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-brand-100/60 bg-white md:flex">
-      <Link to="/" className="flex items-center gap-2 px-6 py-6">
-        <img src="/landing_img/logo.svg" alt="" className="h-8 w-auto" />
-        <span className="text-xl font-extrabold tracking-tight text-brand-700">MateOn</span>
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-brand-100/60 bg-white md:flex">
+      <Link to="/" className="flex items-center gap-2 px-6 py-8">
+        <img src="/landing_img/logo.svg" alt="" className="h-10 w-auto" />
+        <span className="text-2xl font-extrabold font-pretendard tracking-tight text-black ml-2">MateOn</span>
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1 px-4">

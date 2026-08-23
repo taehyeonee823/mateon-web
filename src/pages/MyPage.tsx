@@ -49,9 +49,13 @@ export default function MyPage() {
   }, [isLoggedIn])
 
   const handleLogout = () => {
-    if (!window.confirm('정말 로그아웃 하시겠습니까?')) return
+    if (!window.confirm('정말 로그아웃 하시겠어요?')) return
     logout()
     navigate('/')
+  }
+
+  const handleWithdraw = () => {
+    window.alert('아직 준비 중인 기능이에요.')
   }
 
   const ACTIVITIES = [
@@ -70,7 +74,7 @@ export default function MyPage() {
     return (
       <div className="min-h-screen bg-white">
         <Sidebar />
-        <div className="md:pl-60">
+        <div className="md:pl-64">
           <Topbar />
           <main className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
             <p className="text-lg font-semibold text-brand-900">로그인이 필요해요.</p>
@@ -90,7 +94,7 @@ export default function MyPage() {
   return (
     <div className="min-h-screen bg-white">
       <Sidebar />
-      <div className="md:pl-60">
+      <div className="md:pl-64">
         <Topbar />
 
         <main className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-start">
@@ -161,6 +165,8 @@ export default function MyPage() {
                     {!setting.done && <span className="text-brand-300">›</span>}
                   </button>
                 ))}
+              
+                <div className="border-t border-brand-100"></div>
 
                 <button
                   type="button"
@@ -169,6 +175,15 @@ export default function MyPage() {
                 >
                   <span className="text-base text-rose-500">로그아웃</span>
                   <span className="text-brand-300">›</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleWithdraw}
+                  className="flex w-full items-center justify-between py-4 text-left"
+                >
+                  <span className="text-base text-brand-300">회원 탈퇴</span>
+                  <span className="text-brand-200">›</span>
                 </button>
               </div>
             </div>
