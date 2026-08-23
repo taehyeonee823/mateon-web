@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { ChevronDownIcon, HomeIcon, SearchIcon, UsersIcon } from './icons'
 
 const ACTIVITY_TABS = [
@@ -10,22 +11,25 @@ const ACTIVITY_TABS = [
 
 export default function Sidebar() {
   const [activityOpen, setActivityOpen] = useState(true)
+  const location = useLocation()
+
+  const activeClass =
+    'flex items-center gap-3 rounded-xl bg-brand-50 px-4 py-2.5 text-base font-bold text-[#4D4DF1]'
+  const inactiveClass =
+    'flex items-center gap-3 rounded-xl px-4 py-2.5 text-base font-bold text-[#4D4DF1] transition-colors hover:bg-brand-50/60'
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-brand-100/60 bg-white md:flex">
-      <a href="#top" className="flex items-center gap-2 px-6 py-6">
+      <Link to="/" className="flex items-center gap-2 px-6 py-6">
         <img src="/logo.svg" alt="" className="h-8 w-auto" />
         <span className="text-xl font-extrabold tracking-tight text-brand-700">MateOn</span>
-      </a>
+      </Link>
 
       <nav className="flex flex-1 flex-col gap-1 px-4">
-        <a
-          href="#top"
-          className="flex items-center gap-3 rounded-xl bg-brand-50 px-4 py-2.5 text-base font-bold text-[#4D4DF1]"
-        >
+        <Link to="/" className={location.pathname === '/' ? activeClass : inactiveClass}>
           <HomeIcon className="h-5 w-5 shrink-0 text-[#6F7095]" />
           홈
-        </a>
+        </Link>
 
         <button
           type="button"
@@ -54,13 +58,10 @@ export default function Sidebar() {
           </div>
         )}
 
-        <a
-          href="#top"
-          className="flex items-center gap-3 rounded-xl px-4 py-2.5 text-base font-bold text-[#4D4DF1] transition-colors hover:bg-brand-50/60"
-        >
+        <Link to="/my" className={location.pathname === '/my' ? activeClass : inactiveClass}>
           <UsersIcon className="h-5 w-5 shrink-0 text-[#6F7095]" />
           마이페이지
-        </a>
+        </Link>
       </nav>
     </aside>
   )
