@@ -62,7 +62,7 @@ export default function CTA() {
                 alt=""
                 className="h-5 w-4 object-cover invert"
               />
-              TestFlight로 시작하기git 
+              TestFlight로 시작하기
             </a>
 
             <button
