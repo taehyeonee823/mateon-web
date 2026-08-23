@@ -1,9 +1,18 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import FloatingImages from './FloatingImages'
 import { ChevronDownIcon } from './icons'
 import { useAuth } from '../context/AuthContext'
+import { getContestCount } from '../api/activity'
+
+function formatToday() {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}.${m}.${d}`
+}
 
 const LINES = [
   { text: '전국의 흩어진 활동,', highlight: false },
@@ -15,6 +24,7 @@ export default function CTA() {
   const navigate = useNavigate()
   const { isLoggedIn } = useAuth()
   const titleRef = useRef<HTMLHeadingElement>(null)
+  const [contestCount, setContestCount] = useState<number | null>(null)
 
   useEffect(() => {
     if (!titleRef.current) return
@@ -27,8 +37,14 @@ export default function CTA() {
     )
   }, [])
 
+  useEffect(() => {
+    getContestCount()
+      .then(setContestCount)
+      .catch(() => setContestCount(null))
+  }, [])
+
   return (
-    <section id="cta" className="relative px-6 pb-56 bg-[#F1F6FE]">
+    <section id="cta" className="relative px-6 pb-36 bg-[#F1F6FE]">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-10 overflow-hidden rounded-[2.5rem] px-8 py-24 text-left sm:px-16 lg:flex-row lg:justify-between">
         <div>
           <h2
@@ -54,26 +70,45 @@ export default function CTA() {
             팀을 구성할 수 있는 대학생 플랫폼입니다.
           </p>
 
-          <div className="mt-9 flex flex-wrap gap-3">
-            <a
-              href="#contact"
-              className="flex items-center gap-2 rounded-2xl bg-black px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
-            >
-              <img
-                src="/landing_img/appleLogo.png"
-                alt=""
-                className="h-5 w-4 object-cover invert"
-              />
-              TestFlight로 시작하기
-            </a>
+          <div className="mt-9">
+            <p className="text-xs text-brand-500">{formatToday()}</p>
+            <p className="mt-0.5 text-sm font-semibold text-brand-500">오늘 기준</p>
 
-            <button
-              type="button"
-              onClick={() => navigate(isLoggedIn ? '/contest' : '/login')}
-              className="flex items-center gap-2 rounded-2xl bg-[#2554F0] px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
-            >
-              MateOn Web으로 시작하기
-            </button>
+            <div className="mt-3 flex gap-8">
+              {[
+                { label: '등록된 팀', value: contestCount },
+                { label: '회원 수', value: null as number | null },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <p className="text-4xl font-extrabold leading-none text-[#2554F0] sm:text-5xl">
+                    {stat.value !== null ? `${stat.value.toLocaleString()}+` : ' '}
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-brand-400">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href="#contact"
+                className="flex items-center gap-2 rounded-2xl bg-black px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+              >
+                <img
+                  src="/landing_img/appleLogo.png"
+                  alt=""
+                  className="h-5 w-4 object-cover invert"
+                />
+                TestFlight로 시작하기
+              </a>
+
+              <button
+                type="button"
+                onClick={() => navigate(isLoggedIn ? '/contest' : '/login')}
+                className="flex items-center gap-2 rounded-2xl bg-[#2554F0] px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+              >
+                MateOn Web으로 시작하기
+              </button>
+            </div>
           </div>
         </div>
 

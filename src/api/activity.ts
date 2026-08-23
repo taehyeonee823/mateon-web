@@ -44,6 +44,17 @@ export function fetchBookmarkedEventIds() {
   return authedGet<number[]>('/api/bookmarks/events/ids')
 }
 
+export async function getContestCount(): Promise<number> {
+  const response = await fetch(`${API_BASE_URL}/api/teams`)
+  const result: ApiResponse<TeamSummary[]> = await response.json()
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || `조회 실패: ${response.status}`)
+  }
+
+  return result.data.length
+}
+
 export async function getReviewableTeamCount(): Promise<number> {
   const [applications, myTeams] = await Promise.all([
     getMyApplications().catch(() => [] as ApplicationSummary[]),
