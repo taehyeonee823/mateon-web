@@ -3,8 +3,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { ChevronDownIcon, HomeIcon, SearchIcon, UsersIcon } from './icons'
 
 const ACTIVITY_TABS = [
-  { label: '공모전', href: '#contest' },
-  { label: '대외활동', href: '#external' },
+  { label: '공모전', href: '/contest' },
+  { label: '대외활동', href: '/external' },
   { label: '스터디', href: '#study' },
   { label: '동아리', href: '#club' },
 ]
