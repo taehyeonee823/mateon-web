@@ -3,10 +3,10 @@ import { Link, useLocation } from 'react-router-dom'
 import { ChevronDownIcon, HomeIcon, SearchIcon, UsersIcon } from './icons'
 
 const ACTIVITY_TABS = [
-  { label: '공모전', href: '/contest' },
-  { label: '대외활동', href: '/external' },
-  { label: '스터디', href: '#study' },
-  { label: '동아리', href: '#club' },
+  { label: '공모전', href: '/contest', comingSoon: false },
+  { label: '대외활동', href: '/external', comingSoon: false },
+  { label: '스터디', href: '#study', comingSoon: true },
+  { label: '동아리', href: '#club', comingSoon: true },
 ]
 
 export default function Sidebar() {
@@ -21,7 +21,7 @@ export default function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-brand-100/60 bg-white md:flex">
       <Link to="/" className="flex items-center gap-2 px-6 py-6">
-        <img src="/logo.svg" alt="" className="h-8 w-auto" />
+        <img src="/landing_img/logo.svg" alt="" className="h-8 w-auto" />
         <span className="text-xl font-extrabold tracking-tight text-brand-700">MateOn</span>
       </Link>
 
@@ -46,15 +46,27 @@ export default function Sidebar() {
 
         {activityOpen && (
           <div className="ml-[22px] flex flex-col gap-1 border-l border-brand-100 pl-4">
-            {ACTIVITY_TABS.map((tab) => (
-              <a
-                key={tab.href}
-                href={tab.href}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-[#4D4DF1] transition-colors hover:bg-brand-50/60"
-              >
-                {tab.label}
-              </a>
-            ))}
+            {ACTIVITY_TABS.map((tab) =>
+              tab.comingSoon ? (
+                <span
+                  key={tab.href}
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-[#4D4DF1]"
+                >
+                  {tab.label}
+                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-400">
+                    준비중
+                  </span>
+                </span>
+              ) : (
+                <a
+                  key={tab.href}
+                  href={tab.href}
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-[#4D4DF1] transition-colors hover:bg-brand-50/60"
+                >
+                  {tab.label}
+                </a>
+              ),
+            )}
           </div>
         )}
 
