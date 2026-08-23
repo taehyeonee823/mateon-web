@@ -106,7 +106,7 @@ export default function MyPage() {
                       className="h-20 w-20 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="text-3xl">🙂</span>
+                    <img src="/landing_img/myPage/user.svg" alt="" className="h-9 w-9" />
                   )}
                 </div>
 

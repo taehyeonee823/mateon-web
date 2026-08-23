@@ -153,7 +153,7 @@ export default function Topbar() {
 
       {isLoggedIn && profile ? (
         <>
-          <div className="flex shrink-0 items-center gap-2">
+          <Link to="/my" className="flex shrink-0 items-center gap-2">
             {profile.profileImageUrl ? (
               <img
                 src={profile.profileImageUrl}
@@ -161,12 +161,12 @@ export default function Topbar() {
                 className="h-9 w-9 rounded-full object-cover"
               />
             ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-sm">
-                🙂
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100">
+                <img src="/landing_img/myPage/user.svg" alt="" className="h-5 w-5" />
               </span>
             )}
             <span className="text-sm font-semibold text-brand-900">{profile.name}</span>
-          </div>
+          </Link>
 
           <button
             type="button"
@@ -185,12 +185,12 @@ export default function Topbar() {
             로그인
           </Link>
 
-          <button
-            type="button"
+          <Link
+            to="/signup"
             className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
           >
             무료로 회원가입하기
-          </button>
+          </Link>
         </>
       )}
     </div>

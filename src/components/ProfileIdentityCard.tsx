@@ -27,7 +27,7 @@ export default function ProfileIdentityCard({
             {photoUrl ? (
               <img src={photoUrl} alt="" className="h-24 w-24 rounded-full object-cover" />
             ) : (
-              <span className="text-3xl">🙂</span>
+              <img src="/landing_img/myPage/user.svg" alt="" className="h-11 w-11" />
             )}
           </div>
 

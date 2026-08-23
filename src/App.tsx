@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
+import Signup from './pages/Signup'
+import KakaoCallback from './pages/KakaoCallback'
 import MyPage from './pages/MyPage'
 import PasswordChange from './pages/PasswordChange'
 import EditProfile from './pages/EditProfile'
@@ -14,6 +16,8 @@ function App() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/oauth/kakao/callback" element={<KakaoCallback />} />
       <Route path="/my" element={<MyPage />} />
       <Route path="/pwchange" element={<PasswordChange />} />
       <Route path="/editprofile" element={<EditProfile />} />
