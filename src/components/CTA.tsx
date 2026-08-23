@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import FloatingImages from './FloatingImages'
 import { ChevronDownIcon } from './icons'
+import { useAuth } from '../context/AuthContext'
 
 const LINES = [
   { text: '전국의 흩어진 활동,', highlight: false },
@@ -12,6 +13,7 @@ const LINES = [
 
 export default function CTA() {
   const navigate = useNavigate()
+  const { isLoggedIn } = useAuth()
   const titleRef = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function CTA() {
 
             <button
               type="button"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate(isLoggedIn ? '/contest' : '/login')}
               className="flex items-center gap-2 rounded-2xl bg-[#2554F0] px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
             >
               MateOn Web으로 시작하기
