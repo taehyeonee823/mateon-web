@@ -176,7 +176,7 @@ export default function Signup() {
 
               return (
                 <Fragment key={s.key}>
-                  <div className="flex flex-col items-center">
+                  <div className="flex w-24 shrink-0 flex-col items-center">
                     <div
                       className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-base font-semibold ${
                         isDone
@@ -212,7 +212,9 @@ export default function Signup() {
               <div className="mb-8 flex flex-col items-center text-center">
                 <img src="/landing_img/logo.svg" alt="" className="h-12 w-auto" />
                 <h1 className="mt-3 text-2xl font-bold text-brand-900">
-                  MateOn 회원가입을 위해
+                  MateOn
+                  <br />
+                  회원가입을 위해
                   <br />
                   교육기관 이메일을 입력해 주세요.
                 </h1>

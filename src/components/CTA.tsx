@@ -24,16 +24,38 @@ export default function CTA() {
   const navigate = useNavigate()
   const { isLoggedIn } = useAuth()
   const titleRef = useRef<HTMLHeadingElement>(null)
+  const statsRef = useRef<HTMLDivElement>(null)
   const [contestCount, setContestCount] = useState<number | null>(null)
 
   useEffect(() => {
     if (!titleRef.current) return
     const letters = titleRef.current.querySelectorAll('span')
 
+    const numbers = statsRef.current?.querySelectorAll('.stat-number')
+    if (numbers?.length) {
+      gsap.set(numbers, { autoAlpha: 0, y: 12 })
+    }
+
     gsap.fromTo(
       letters,
       { opacity: 0, y: 16 },
-      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out', stagger: 0.03 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+        ease: 'power2.out',
+        stagger: 0.03,
+        onComplete: () => {
+          if (!numbers?.length) return
+          gsap.to(numbers, {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.6,
+            ease: 'power2.out',
+            stagger: 0.1,
+          })
+        },
+      },
     )
   }, [])
 
@@ -71,21 +93,23 @@ export default function CTA() {
           </p>
 
           <div className="mt-9">
-            <p className="text-xs text-brand-500">{formatToday()}</p>
-            <p className="mt-0.5 text-sm font-semibold text-brand-500">오늘 기준</p>
+            <div>
+              <p className="text-xs text-brand-500">{formatToday()}</p>
+              <p className="mt-0.5 text-sm font-semibold text-brand-500">오늘 기준</p>
 
-            <div className="mt-3 flex gap-8">
-              {[
-                { label: '등록된 팀', value: contestCount },
-                { label: '회원 수', value: null as number | null },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <p className="text-4xl font-extrabold leading-none text-[#2554F0] sm:text-5xl">
-                    {stat.value !== null ? `${stat.value.toLocaleString()}+` : ' '}
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-brand-400">{stat.label}</p>
-                </div>
-              ))}
+              <div ref={statsRef} className="mt-3 flex gap-8">
+                {[
+                  { label: '등록된 팀', value: contestCount },
+                  { label: '회원 수', value: null as number | null },
+                ].map((stat) => (
+                  <div key={stat.label}>
+                    <p className="stat-number text-4xl font-extrabold leading-none text-[#2554F0] sm:text-5xl">
+                      {stat.value !== null ? `${stat.value.toLocaleString()}+` : ' '}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-brand-400">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -100,14 +124,6 @@ export default function CTA() {
                 />
                 TestFlight로 시작하기
               </a>
-
-              <button
-                type="button"
-                onClick={() => navigate(isLoggedIn ? '/contest' : '/login')}
-                className="flex items-center gap-2 rounded-2xl bg-[#2554F0] px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
-              >
-                MateOn Web으로 시작하기
-              </button>
             </div>
           </div>
         </div>
