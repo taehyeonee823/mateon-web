@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
-import { ClockIcon, BookmarkIcon, ChevronDownIcon } from '../components/icons'
+import { ChevronDownIcon, ClockIcon, BookmarkIcon } from '../components/icons'
 import {
   searchAllEvents,
   bookmarkEvent,
@@ -9,7 +9,7 @@ import {
   computeDDay,
   EVENT_FIELD_LABELS,
   type EventItem,
-} from '../api/event'
+} from '../api/event' 
 
 /* ────────────────────────────────────────────────────────────────
  * Types & constants
@@ -72,7 +72,11 @@ function EntranceStyles() {
         from { opacity: 0; transform: translateY(14px); }
         to { opacity: 1; transform: translateY(0); }
       }
-      .rise-in { animation: riseIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+      .rise-in {
+        animation: riseIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        backface-visibility: hidden;
+        transform-style: preserve-3d;
+      }
       @media (prefers-reduced-motion: reduce) {
         .rise-in { animation: none; }
       }
@@ -95,6 +99,22 @@ function ContestCard({
   style?: React.CSSProperties
 }) {
   const d = dDayInfo(event.endDate)
+  const cardRef = useRef<HTMLAnchorElement>(null)
+
+  // 애니메이션이 끝나면 rise-in 클래스를 제거해서 GPU 컴포지팅 레이어를
+  // 해제한다. 그대로 두면 스크롤/페이지 전환 시 해당 카드가
+  // 흰 화면으로 리페인트되지 않는 브라우저 버그가 발생한다.
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    function handleAnimEnd(e: AnimationEvent) {
+      if (e.animationName === 'riseIn') {
+        el!.classList.remove('rise-in')
+      }
+    }
+    el.addEventListener('animationend', handleAnimEnd)
+    return () => el.removeEventListener('animationend', handleAnimEnd)
+  }, [])
 
   function handleBookmarkClick(e: React.MouseEvent) {
     e.preventDefault()
@@ -104,7 +124,9 @@ function ContestCard({
 
   return (
     <Link
+      ref={cardRef}
       to={`/contest/${event.id}`}
+      state={{ event }}
       className={`group flex flex-col overflow-hidden rounded-2xl border border-[#ECECF5] bg-white shadow-sm shadow-black/[0.03] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/[0.08] ${className}`}
       style={style}
     >
@@ -347,6 +369,7 @@ export default function ContestPage() {
 
   const filtered = useMemo(() => {
     let list = activeCategory === '전체' ? events : events.filter((e) => e.fieldLabel === activeCategory)
+    list = list.filter((e) => !dDayInfo(e.endDate).closed) // 마감된 공모전 제외
     list = list.filter((e) => isWithinPeriod(e.endDate, periodFilter))
     return sortByDeadline ? [...list].sort((a, b) => a.endDate.localeCompare(b.endDate)) : list
   }, [events, activeCategory, sortByDeadline, periodFilter])
