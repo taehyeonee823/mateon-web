@@ -117,3 +117,20 @@ export function BoltIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+export function ClockIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth={2} />
+      <path d="M12 7v5l3.5 2" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function BookmarkIcon({ className, filled = false }: IconProps & { filled?: boolean }) {
+  return (
+    <svg {...base} className={className} fill={filled ? 'currentColor' : 'none'}>
+      <path d="M6 4h12v16l-6-4-6 4V4z" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" />
+    </svg>
+  )
+}
