@@ -1,25 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link } from 'react-router-dom'
-import { ChevronDownIcon, ClockIcon, BookmarkIcon } from '../components/icons'
-import {
-  searchAllEvents,
-  bookmarkEvent,
-  unbookmarkEvent,
-  computeDDay,
-  EVENT_FIELD_LABELS,
-  type EventItem,
-} from '../api/event' 
+import EventCard from '../components/EventCard'
+import Pagination from '../components/Pagination'
+import { ChevronDownIcon } from '../components/icons'
+import { searchAllEvents, bookmarkEvent, unbookmarkEvent, EVENT_FIELD_LABELS, type EventItem } from '../api/event'
+import { dDayInfo, isWithinPeriod, type PeriodFilter, type PeriodPreset } from '../utils/dday'
 
 /* ────────────────────────────────────────────────────────────────
- * Types & constants
+ * Constants
  * ──────────────────────────────────────────────────────────────── */
-type PeriodPreset = 'today' | 'week' | 'month'
-type PeriodFilter =
-  | { type: 'preset'; preset: PeriodPreset }
-  | { type: 'custom'; start: string; end: string }
-  | null
-
 const PRESET_LABEL: Record<PeriodPreset, string> = {
   today: '오늘 마감',
   week: '이번주 마감',
@@ -30,37 +19,6 @@ const CATEGORIES = ['전체', ...Object.values(EVENT_FIELD_LABELS)] as const
 
 const INITIAL_VISIBLE_COUNT = 6
 const PAGE_SIZE = 24
-
-/* ────────────────────────────────────────────────────────────────
- * Helpers
- * ──────────────────────────────────────────────────────────────── */
-function presetRange(preset: PeriodPreset): { start: Date; end: Date } {
-  const start = new Date()
-  const end = new Date()
-  if (preset === 'week') {
-    end.setDate(end.getDate() + (7 - end.getDay()))
-  } else if (preset === 'month') {
-    end.setMonth(end.getMonth() + 1, 0)
-  }
-  return { start, end }
-}
-
-function isWithinPeriod(endDate: string, filter: PeriodFilter) {
-  if (!filter) return true
-  const target = new Date(endDate)
-  const range =
-    filter.type === 'preset' ? presetRange(filter.preset) : { start: new Date(filter.start), end: new Date(filter.end) }
-  return target >= range.start && target <= range.end
-}
-
-// 백엔드 computeDDay('마감' | 'D-DAY' | 'D-n')를 카드 스타일 결정에 필요한 형태로 감싼 헬퍼
-function dDayInfo(endDate: string) {
-  const label = computeDDay(endDate)
-  if (label === '마감') return { label, urgent: false, closed: true }
-  if (label === 'D-DAY') return { label, urgent: true, closed: false }
-  const diff = Number(label.slice(2))
-  return { label, urgent: diff <= 7, closed: false }
-}
 
 /* ────────────────────────────────────────────────────────────────
  * Motion (respects prefers-reduced-motion)
@@ -81,191 +39,6 @@ function EntranceStyles() {
         .rise-in { animation: none; }
       }
     `}</style>
-  )
-}
-
-/* ────────────────────────────────────────────────────────────────
- * Contest card
- * ──────────────────────────────────────────────────────────────── */
-function ContestCard({
-  event,
-  onToggleBookmark,
-  className = '',
-  style,
-}: {
-  event: EventItem
-  onToggleBookmark: (event: EventItem) => void
-  className?: string
-  style?: React.CSSProperties
-}) {
-  const d = dDayInfo(event.endDate)
-  const cardRef = useRef<HTMLAnchorElement>(null)
-
-  // 애니메이션이 끝나면 rise-in 클래스를 제거해서 GPU 컴포지팅 레이어를
-  // 해제한다. 그대로 두면 스크롤/페이지 전환 시 해당 카드가
-  // 흰 화면으로 리페인트되지 않는 브라우저 버그가 발생한다.
-  useEffect(() => {
-    const el = cardRef.current
-    if (!el) return
-    function handleAnimEnd(e: AnimationEvent) {
-      if (e.animationName === 'riseIn') {
-        el!.classList.remove('rise-in')
-      }
-    }
-    el.addEventListener('animationend', handleAnimEnd)
-    return () => el.removeEventListener('animationend', handleAnimEnd)
-  }, [])
-
-  function handleBookmarkClick(e: React.MouseEvent) {
-    e.preventDefault()
-    e.stopPropagation()
-    onToggleBookmark(event)
-  }
-
-  return (
-    <Link
-      ref={cardRef}
-      to={`/contest/${event.id}`}
-      state={{ event }}
-      className={`group flex flex-col overflow-hidden rounded-2xl border border-[#ECECF5] bg-white shadow-sm shadow-black/[0.03] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/[0.08] ${className}`}
-      style={style}
-    >
-      {/* Thumbnail */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#F3F3FA]">
-        {event.imageUrl ? (
-          <img
-            src={event.imageUrl}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-[#F3F3FA] to-[#E9E9FB]" />
-        )}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-black/0 to-black/0" />
-
-        {/* Field chip, top-left */}
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-[#4D4DF1] backdrop-blur-sm">
-          {event.fieldLabel ?? '기타'}
-        </span>
-
-        {/* D-day badge + bookmark, top-right */}
-        <div className="absolute right-3 top-3 flex items-center gap-1.5">
-          <span
-            className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm ${
-              d.closed ? 'bg-black/40' : d.urgent ? 'bg-[#FF6B57]' : 'bg-black/55'
-            }`}
-          >
-            <ClockIcon className="h-3 w-3" />
-            {d.label}
-          </span>
-          <button
-            type="button"
-            onClick={handleBookmarkClick}
-            aria-pressed={event.bookmarked}
-            aria-label={event.bookmarked ? '북마크 해제' : '북마크 등록'}
-            className={`flex h-6 w-6 items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
-              event.bookmarked ? 'bg-[#4D4DF1] text-white' : 'bg-black/40 text-white hover:bg-black/55'
-            }`}
-          >
-            <BookmarkIcon className="h-3.5 w-3.5" filled={event.bookmarked} />
-          </button>
-        </div>
-
-        {/* Organizer, bottom-left over gradient */}
-        <span className="absolute bottom-2.5 left-3 text-[12px] font-medium text-white/90 drop-shadow">
-          {event.organizer}
-        </span>
-      </div>
-
-      {/* Body */}
-      <div className="flex flex-1 flex-col gap-3 px-4 py-4">
-        <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-[#1B1B33] group-hover:text-[#4D4DF1]">
-          {event.title}
-        </h3>
-
-        {event.summarizedDescription && (
-          <p className="line-clamp-2 text-[12px] leading-relaxed text-[#6F7095]">{event.summarizedDescription}</p>
-        )}
-
-        <div className="mt-auto flex items-center justify-between border-t border-[#F0F0F7] pt-2.5 text-[11px] text-[#8C8DAE]">
-          <span>{event.endDate.replaceAll('-', '.')} 마감</span>
-          <span className="font-semibold text-[#4D4DF1] opacity-0 transition-opacity group-hover:opacity-100">
-            자세히 보기 →
-          </span>
-        </div>
-      </div>
-    </Link>
-  )
-}
-
-/* ────────────────────────────────────────────────────────────────
- * Pagination
- * ──────────────────────────────────────────────────────────────── */
-function Pagination({
-  currentPage,
-  totalPages,
-  onChange,
-}: {
-  currentPage: number
-  totalPages: number
-  onChange: (page: number) => void
-}) {
-  if (totalPages <= 1) return null
-
-  // 페이지가 많아질 때를 대비해 현재 페이지 주변만 보여주고 나머지는 '...' 처리
-  const pages: (number | 'ellipsis')[] = []
-  const windowStart = Math.max(2, currentPage - 1)
-  const windowEnd = Math.min(totalPages - 1, currentPage + 1)
-
-  pages.push(1)
-  if (windowStart > 2) pages.push('ellipsis')
-  for (let p = windowStart; p <= windowEnd; p++) pages.push(p)
-  if (windowEnd < totalPages - 1) pages.push('ellipsis')
-  if (totalPages > 1) pages.push(totalPages)
-
-  return (
-    <nav className="mt-8 flex items-center justify-center gap-1" aria-label="페이지네이션">
-      <button
-        type="button"
-        onClick={() => onChange(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-[#6F7095] transition-colors hover:bg-[#F3F3FA] disabled:opacity-30"
-        aria-label="이전 페이지"
-      >
-        ‹
-      </button>
-
-      {pages.map((p, idx) =>
-        p === 'ellipsis' ? (
-          <span key={`e-${idx}`} className="flex h-8 w-8 items-center justify-center text-sm text-[#8C8DAE]">
-            …
-          </span>
-        ) : (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onChange(p)}
-            aria-current={p === currentPage ? 'page' : undefined}
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
-              p === currentPage ? 'bg-[#4D4DF1] text-white' : 'text-[#6F7095] hover:bg-[#F3F3FA]'
-            }`}
-          >
-            {p}
-          </button>
-        ),
-      )}
-
-      <button
-        type="button"
-        onClick={() => onChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-[#6F7095] transition-colors hover:bg-[#F3F3FA] disabled:opacity-30"
-        aria-label="다음 페이지"
-      >
-        ›
-      </button>
-    </nav>
   )
 }
 
@@ -323,11 +96,6 @@ export default function ContestPage() {
       setEvents((prev) => prev.map((e) => (e.id === target.id ? { ...e, bookmarked: target.bookmarked } : e)))
     }
   }
-
-  // Recompute the panel's screen position whenever it opens, and keep it
-  // pinned while the page scrolls/resizes. Rendering via a portal + fixed
-  // position means no ancestor's overflow/z-index/transform can clip or
-  // bury this dropdown behind the card grid.
   useLayoutEffect(() => {
     if (!periodOpen) return
     function updateCoords() {
@@ -561,7 +329,7 @@ export default function ContestPage() {
         <>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {paged.map((event, idx) => (
-              <ContestCard
+              <EventCard
                 key={event.id}
                 event={event}
                 onToggleBookmark={handleToggleBookmark}

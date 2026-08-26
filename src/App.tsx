@@ -45,6 +45,14 @@ function App() {
           </PageShell>
         }
       />
+      <Route
+        path="/external/:id"
+        element={
+          <PageShell>
+            <ContestDetail />
+          </PageShell>
+        }
+      />
     </Routes>
   )
 }

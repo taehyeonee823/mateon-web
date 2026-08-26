@@ -70,9 +70,10 @@ export default function ContestDetailPage() {
   const [event, setEvent] = useState<EventItem | null>(stateEvent ?? null)
   const [loading, setLoading] = useState(!stateEvent)
   const [error, setError] = useState<string | null>(null)
+  const [imageError, setImageError] = useState(false)
 
   useEffect(() => {
-    if (stateEvent) return // 이미 데이터가 있으니 API 호출 스킵
+    if (stateEvent) return 
     if (!id) {
       setLoading(false)
       return
@@ -90,7 +91,6 @@ export default function ContestDetailPage() {
       .finally(() => setLoading(false))
 
     return () => controller.abort()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   const d = useMemo(() => (event ? dDayInfo(event.endDate) : null), [event])
@@ -138,12 +138,18 @@ export default function ContestDetailPage() {
     )
   }
 
+  const showImage = event.imageUrl && !imageError 
+
   return (
     <div className="pb-28 lg:pb-16">
       {/* Hero */}
       <div className="relative h-[42vh] min-h-[280px] w-full overflow-hidden bg-[#141A33] sm:h-[46vh]">
-        {event.imageUrl ? (
-          <img src={event.imageUrl} alt="" className="h-full w-full object-cover opacity-90" />
+        {showImage ? (
+          <img 
+            src={event.imageUrl!} 
+            alt="" 
+            onError={() => setImageError(true)}
+            className="h-full w-full object-cover opacity-90" />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-[#1B1B33] to-[#2A2A4D]" />
         )}
