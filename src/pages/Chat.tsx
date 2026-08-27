@@ -1,30 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ChatRoom, RoomType, StompChatMessage } from '../types/chat';
+import type { ChatRoom, StompChatMessage } from '../types/chat';
 import {
   fetchChatRooms,
   fetchChatMessages,
   markChatAsRead,
-} from '../api/chat'; 
-import { useAuth } from '../context/AuthContext'; 
+} from '../api/chat';
+import { useAuth } from '../context/AuthContext';
 import {
   connectStomp,
   subscribeToRoom,
   unsubscribeFromRoom,
   sendChatMessage,
-} from '../lib/stompClient'; 
-
-type RoomTab = 'ALL' | RoomType;
-
-const TAB_LABEL: Record<RoomTab, string> = {
-  ALL: '전체',
-  DM: '개인 채팅',
-  GROUP: '팀 채팅',
-};
-
-const ROOM_TYPE_LABEL: Record<RoomType, string> = {
-  DM: '개인',
-  GROUP: '팀',
-};
+} from '../lib/stompClient';
 
 // "YYYY-MM-DDTHH:mm:ss" -> 채팅방 목록용 짧은 표시 (오늘이면 시:분, 아니면 M/D)
 function formatRoomTime(iso: string | null): string {
@@ -54,7 +41,6 @@ export default function ChatPage() {
 
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<RoomTab>('ALL');
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
 
   const [messages, setMessages] = useState<StompChatMessage[]>([]);
@@ -176,11 +162,6 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomIdsKey]);
 
-  const filteredRooms = useMemo(() => {
-    if (activeTab === 'ALL') return rooms;
-    return rooms.filter((r) => r.type === activeTab);
-  }, [rooms, activeTab]);
-
   const selectedRoom = rooms.find((r) => r.roomId === selectedRoomId) ?? null;
 
   const [isComposing, setIsComposing] = useState(false);
@@ -198,32 +179,16 @@ export default function ChatPage() {
           <h1 className="text-2xl font-bold">채팅</h1>
         </div>
 
-        <div className="flex gap-2 px-6 pb-4">
-          {(Object.keys(TAB_LABEL) as RoomTab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {TAB_LABEL[tab]}
-            </button>
-          ))}
-        </div>
-
         <div className="flex-1 overflow-y-auto">
           {roomsLoading && (
             <p className="px-6 py-8 text-center text-sm text-slate-400">불러오는 중…</p>
           )}
 
-          {!roomsLoading && filteredRooms.length === 0 && (
+          {!roomsLoading && rooms.length === 0 && (
             <p className="px-6 py-8 text-center text-sm text-slate-400">채팅방이 없어요.</p>
           )}
 
-          {filteredRooms.map((room) => (
+          {rooms.map((room) => (
             <button
               key={room.roomId}
               onClick={() => setSelectedRoomId(room.roomId)}
@@ -239,9 +204,6 @@ export default function ChatPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex min-w-0 items-center gap-1.5">
                     <span className="truncate font-semibold">{room.title}</span>
-                    <span className="shrink-0 rounded bg-indigo-100 px-1.5 py-0.5 text-[11px] font-medium text-indigo-600">
-                      {ROOM_TYPE_LABEL[room.type]}
-                    </span>
                   </div>
                   <span className="shrink-0 text-xs text-slate-400">
                     {formatRoomTime(room.lastMessageAt)}
@@ -278,18 +240,12 @@ export default function ChatPage() {
                 </div>
                 <div>
                   <p className="font-semibold">{selectedRoom.title}</p>
-                  <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[11px] font-medium text-indigo-600">
-                    {ROOM_TYPE_LABEL[selectedRoom.type]}
-                  </span>
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <button className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium hover:bg-slate-50">
-                  팀 정보 보기
-                </button>
-                <button className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
-                  지원서 보기
+                  프로필 보기
                 </button>
               </div>
             </header>
