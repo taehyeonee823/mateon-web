@@ -10,6 +10,7 @@ import Contest from './pages/Contest'
 import ContestDetail from './pages/ContestDetail'
 import External from './pages/External'
 import PageShell from './components/PageShell'
+import Chat from './pages/Chat'
 
 function App() {
   return (
@@ -50,6 +51,14 @@ function App() {
         element={
           <PageShell>
             <ContestDetail />
+          </PageShell>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <PageShell>
+            <Chat />
           </PageShell>
         }
       />

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ChevronDownIcon, HomeIcon, SearchIcon, UsersIcon } from './icons'
+import { ChevronDownIcon, HomeIcon, SearchIcon, UsersIcon, ChatIcon } from './icons'
 
 const ACTIVITY_TABS = [
   { label: '공모전', href: '/contest', comingSoon: false },
@@ -69,6 +69,11 @@ export default function Sidebar() {
             )}
           </div>
         )}
+
+        <Link to="/chat" className={location.pathname === '/chat' ? activeClass : inactiveClass}>
+          <ChatIcon className="h-5 w-5 shrink-0 text-[#6F7095]" />
+          채팅
+        </Link>
 
         <Link to="/my" className={location.pathname === '/my' ? activeClass : inactiveClass}>
           <UsersIcon className="h-5 w-5 shrink-0 text-[#6F7095]" />

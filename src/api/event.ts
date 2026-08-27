@@ -111,9 +111,13 @@ export type EventExtractionDraft = {
 };
 
 export function computeDDay(endDate: string): string {
-  const end = new Date(`${endDate}T23:59:59`);
+  // 시:분:초를 섞어서 계산하면 자정 근처에서 반올림 방향이 꼬이므로,
+  // 두 날짜 모두 그날 자정(00:00:00) 기준으로 맞춘 뒤 날짜 수 차이만 비교한다.
+  const end = new Date(`${endDate}T00:00:00`);
   const now = new Date();
-  const diffDays = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  now.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.round((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) return '마감';
   if (diffDays === 0) return 'D-DAY';
