@@ -1,5 +1,3 @@
-
-
 import { useState } from 'react'
 import { ChevronRightIcon } from '../components/icons'
 import { useNavigate } from 'react-router-dom'
