@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import FloatingImages from './FloatingImages'
 import { ChevronDownIcon } from './icons'
-import { useAuth } from '../context/AuthContext'
 import { getContestCount } from '../api/activity'
 
 function formatToday() {
@@ -21,8 +19,6 @@ const LINES = [
 ]
 
 export default function CTA() {
-  const navigate = useNavigate()
-  const { isLoggedIn } = useAuth()
   const titleRef = useRef<HTMLHeadingElement>(null)
   const statsRef = useRef<HTMLDivElement>(null)
   const [contestCount, setContestCount] = useState<number | null>(null)

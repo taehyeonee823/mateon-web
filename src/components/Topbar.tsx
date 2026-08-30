@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { SearchIcon } from './icons'
+import { ChevronDownIcon, SearchIcon } from './icons'
 import { useAuth } from '../context/AuthContext'
 import {
   getMyNotifications,
   type NotificationResponseDTO,
   type NotificationType,
 } from '../api/notification'
+
+const CATEGORY_TABS = [
+  { label: '공모전', path: '/contest', comingSoon: false },
+  { label: '대외활동', path: '/external', comingSoon: false },
+  { label: '스터디', path: null, comingSoon: true },
+  { label: '동아리', path: null, comingSoon: true },
+]
 
 const NOTIFICATION_ICON: Record<NotificationType, { icon: string; bg: string }> = {
   APPROVE: { icon: '/noti/rocket_fill.svg', bg: 'bg-emerald-50' },
@@ -52,6 +59,23 @@ export default function Topbar() {
 
   const [notifications, setNotifications] = useState<NotificationResponseDTO[]>([])
   const [isBellHovered, setIsBellHovered] = useState(false)
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState('전체')
+  const [keyword, setKeyword] = useState('')
+  const categoryRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isCategoryOpen) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
+        setIsCategoryOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isCategoryOpen])
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -71,6 +95,20 @@ export default function Topbar() {
 
   const hasUnread = notifications.some((n) => !n.isRead)
 
+  const handleSelectCategory = (tab: (typeof CATEGORY_TABS)[number]) => {
+    if (tab.comingSoon) return
+    setSelectedCategory(tab.label)
+    setIsCategoryOpen(false)
+    if (tab.path) navigate(tab.path)
+  }
+
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault()
+    const trimmed = keyword.trim()
+    const query = trimmed ? `?keyword=${encodeURIComponent(trimmed)}` : ''
+    navigate(`${selectedCategory === '대외활동' ? '/external' : '/contest'}${query}`)
+  }
+
   const handleLogout = () => {
     const message = profile ? `${profile.name}님 로그아웃 하시겠어요?` : '로그아웃 하시겠어요?'
     if (!window.confirm(message)) return
@@ -79,16 +117,64 @@ export default function Topbar() {
   }
 
   return (
-    <div className="flex items-center gap-8 px-24 py-6">
+    <div className="flex items-center gap-6 px-20 py-6">
       <div className="flex flex-1 justify-center">
-        <div className="relative w-full max-w-2xl">
-          <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" />
-          <input
-            type="text"
-            placeholder="공모전, 분야, 기술, 키워드를 검색해보세요"
-            className="w-full rounded-full border border-brand-100 bg-brand-50/40 py-3 pl-11 pr-4 text-sm text-brand-900 placeholder:text-brand-400 focus:border-brand-300 focus:outline-none"
-          />
-        </div>
+        <form onSubmit={handleSearch} className="flex w-full max-w-2xl gap-2">
+          <div className="relative shrink-0" ref={categoryRef}>
+            <button
+              type="button"
+              onClick={() => setIsCategoryOpen((v) => !v)}
+              aria-expanded={isCategoryOpen}
+              className="flex h-full w-36 items-center justify-between rounded-xl border border-brand-100 bg-white px-4 py-3 text-sm font-semibold text-black transition-colors hover:border-brand-300"
+            >
+              {selectedCategory}
+              <ChevronDownIcon
+                className={`h-3.5 w-3.5 text-brand-400 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {isCategoryOpen && (
+              <div className="absolute left-0 top-full z-50 mt-2 w-36 rounded-2xl border border-brand-100 bg-white p-2 shadow-lg shadow-black/10">
+                {CATEGORY_TABS.map((tab) => (
+                  <button
+                    key={tab.label}
+                    type="button"
+                    disabled={tab.comingSoon}
+                    onClick={() => handleSelectCategory(tab)}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors ${
+                      tab.comingSoon
+                        ? 'text-brand-300'
+                        : 'text-brand-900 hover:bg-brand-50/60'
+                    } ${selectedCategory === tab.label ? 'bg-brand-50/60' : ''}`}
+                  >
+                    {tab.label}
+                    {tab.comingSoon && (
+                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-400">
+                        준비중
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="공모전, 분야, 기술, 키워드를 검색해보세요"
+              className="w-full rounded-full border border-brand-100 bg-brand-50/40 py-3 pl-4 pr-20 text-sm text-brand-900 placeholder:text-brand-400 focus:border-brand-300 focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-[#2554F0] px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              <SearchIcon className="h-3.5 w-3" />
+            </button>
+          </div>
+        </form>
       </div>
 
       <div
