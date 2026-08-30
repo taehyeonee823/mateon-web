@@ -49,10 +49,10 @@ export default function CreateTeamPosition() {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, action: () => void) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      action()
-    }
+    if (e.key !== 'Enter') return
+    if (e.nativeEvent.isComposing) return 
+    e.preventDefault()
+    action()
   }
 
   return (
