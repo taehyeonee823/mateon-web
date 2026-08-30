@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useSearchParams } from 'react-router-dom'
 import EventCard from '../components/EventCard'
 import Pagination from '../components/Pagination'
 import { ChevronDownIcon } from '../components/icons'
@@ -46,6 +47,9 @@ function EntranceStyles() {
  * Page
  * ──────────────────────────────────────────────────────────────── */
 export default function ContestPage() {
+  const [searchParams] = useSearchParams()
+  const keyword = searchParams.get('keyword') ?? ''
+
   const [events, setEvents] = useState<EventItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -64,13 +68,13 @@ export default function ContestPage() {
   const periodPanelRef = useRef<HTMLDivElement>(null)
   const [panelCoords, setPanelCoords] = useState<{ top: number; right: number } | null>(null)
 
-  // 마운트 시 공모전(CONTEST) 목록 로드
+  // 공모전(CONTEST) 목록 로드 — 검색창에서 넘어온 keyword가 있으면 함께 반영
   useEffect(() => {
     const controller = new AbortController()
     setLoading(true)
     setError(null)
 
-    searchAllEvents({ category: 'CONTEST' }, controller.signal)
+    searchAllEvents({ category: 'CONTEST', keyword: keyword || undefined }, controller.signal)
       .then(setEvents)
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return
@@ -79,7 +83,7 @@ export default function ContestPage() {
       .finally(() => setLoading(false))
 
     return () => controller.abort()
-  }, [])
+  }, [keyword])
 
   // 북마크 토글 (optimistic update, 실패 시 롤백)
   async function handleToggleBookmark(target: EventItem) {
