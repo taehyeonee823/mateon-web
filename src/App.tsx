@@ -1,4 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Outlet } from 'react-router-dom'
+import { CreateTeamProvider } from './context/CreateTeam' 
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -15,6 +16,9 @@ import ContestDetail from './pages/ContestDetail'
 import External from './pages/External'
 import PageShell from './components/PageShell'
 import Chat from './pages/Chat'
+import CreateTeamInfo from './pages/CreateTeamInfo'
+import CreateTeamPosition from './pages/CreateTeamPosition'
+import CreateTeamPreview from './pages/CreateTeamPreview'
 
 function App() {
   return (
@@ -30,46 +34,34 @@ function App() {
       <Route path="/my/review" element={<TeamReview />} />
       <Route path="/pwchange" element={<PasswordChange />} />
       <Route path="/editprofile" element={<EditProfile />} />
+
+      {/* PageShell로 감싸는 라우트 그룹 */}
       <Route
-        path="/contest"
         element={
           <PageShell>
-            <Contest />
+            <Outlet />
           </PageShell>
         }
-      />
-      <Route
-        path="/contest/:id"
-        element={
-          <PageShell>
-            <ContestDetail />
-          </PageShell>
-        }
-      />
-      <Route
-        path="/external"
-        element={
-          <PageShell>
-            <External />
-          </PageShell>
-        }
-      />
-      <Route
-        path="/external/:id"
-        element={
-          <PageShell>
-            <ContestDetail />
-          </PageShell>
-        }
-      />
-      <Route
-        path="/chat"
-        element={
-          <PageShell>
-            <Chat />
-          </PageShell>
-        }
-      />
+      >
+        <Route path="/contest" element={<Contest />} />
+        <Route path="/contest/:id" element={<ContestDetail />} />
+        <Route path="/external" element={<External />} />
+        <Route path="/external/:id" element={<ContestDetail />} />
+        <Route path="/chat" element={<Chat />} />
+
+        {/* 2. 팀 생성 관련 페이지들만 CreateTeamProvider로 한 번 더 감싸줍니다 */}
+        <Route 
+          element={
+            <CreateTeamProvider>
+              <Outlet />
+            </CreateTeamProvider>
+          }
+        >
+          <Route path="/teams/new" element={<CreateTeamInfo />} />
+          <Route path="/teams/new/position" element={<CreateTeamPosition />} />
+          <Route path="/teams/new/preview" element={<CreateTeamPreview />} />
+        </Route>
+      </Route>
     </Routes>
   )
 }

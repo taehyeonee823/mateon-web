@@ -143,3 +143,32 @@ export function CalendarIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+export function PencilIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="m14.5 4.5 5 5L8 21H3v-5Z" />
+      <path d="m12.5 6.5 5 5" />
+    </svg>
+  )
+}
+
+export function PlusIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 4.5v15" />
+      <path d="M4.5 12h15" />
+    </svg>
+  )
+}
+
+export function TrashIcon({ className }: IconProps) {
+  return (
+<svg {...base} className={className}>
+<path d="M4.5 7h15" />
+<path d="M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2" />
+<path d="M6.5 7 7.3 19a2 2 0 0 0 2 1.8h5.4a2 2 0 0 0 2-1.8L17.5 7" />
+<path d="M10 11v6M14 11v6" />
+</svg>
+  )
+}
