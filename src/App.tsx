@@ -35,6 +35,16 @@ function App() {
       <Route path="/pwchange" element={<PasswordChange />} />
       <Route path="/editprofile" element={<EditProfile />} />
 
+      {/* 채팅은 뷰포트 높이에 딱 맞는 자체 스크롤 레이아웃이라 풋터 없이 별도로 감싼다 */}
+      <Route
+        path="/chat"
+        element={
+          <PageShell hideFooter>
+            <Chat />
+          </PageShell>
+        }
+      />
+
       {/* PageShell로 감싸는 라우트 그룹 */}
       <Route
         element={
@@ -47,7 +57,6 @@ function App() {
         <Route path="/contest/:id" element={<ContestDetail />} />
         <Route path="/external" element={<External />} />
         <Route path="/external/:id" element={<ContestDetail />} />
-        <Route path="/chat" element={<Chat />} />
 
         {/* 2. 팀 생성 관련 페이지들만 CreateTeamProvider로 한 번 더 감싸줍니다 */}
         <Route 

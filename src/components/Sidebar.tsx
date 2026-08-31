@@ -77,7 +77,7 @@ export default function Sidebar() {
 
         <Link to="/chat" className={location.pathname === '/chat' ? activeClass : inactiveClass}>
           <ChatIcon className="h-5 w-5 shrink-0 text-[#6F7095]" />
-          채팅
+          채팅 및 드림이
         </Link>
 
         <Link to="/my" className={location.pathname === '/my' ? activeClass : inactiveClass}>
