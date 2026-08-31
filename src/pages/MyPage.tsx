@@ -117,7 +117,7 @@ export default function MyPage() {
       <div className="md:pl-64">
         <Topbar />
 
-        <main className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-start">
+        <main className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-4 lg:flex-row lg:items-start">
           {/* 왼쪽: 프로필 · 협업온도 · 계정 설정 */}
           <aside className="w-full shrink-0 lg:w-72">
             <div className="rounded-2xl border border-brand-100 p-6">

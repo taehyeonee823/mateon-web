@@ -5,7 +5,6 @@ import {
   fetchChatMessages,
   markChatAsRead,
 } from '../api/chat';
-import { sendChatbotMessage } from '../api/chatbot';
 import { getPublicUserProfile } from '../api/user';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -14,12 +13,6 @@ import {
   unsubscribeFromRoom,
   sendChatMessage,
 } from '../lib/stompClient';
-
-type DreamyMessage = {
-  id: string;
-  role: 'user' | 'bot';
-  text: string;
-};
 
 // "YYYY-MM-DDTHH:mm:ss" -> 채팅방 목록용 짧은 표시 (오늘이면 시:분, 아니면 M/D)
 function formatRoomTime(iso: string | null): string {
@@ -87,15 +80,6 @@ export default function ChatPage() {
 
   // 채팅 말풍선 글자 크기 조절 (기본 14px = text-sm)
   const [chatFontSize, setChatFontSize] = useState(14);
-
-  // 드림이(AI 챗봇) - 일반 채팅방과 달리 STOMP가 아니라 매칭 의도 대화 API를 그대로 씀
-  const [isDreamySelected, setIsDreamySelected] = useState(false);
-  const [dreamyMessages, setDreamyMessages] = useState<DreamyMessage[]>([
-    { id: 'welcome', role: 'bot', text: '안녕? 오늘은 어떤 걸 도와줄까?' },
-  ]);
-  const [dreamyInput, setDreamyInput] = useState('');
-  const [dreamySending, setDreamySending] = useState(false);
-  const dreamyScrollRef = useRef<HTMLDivElement>(null);
 
   const listAbort = useRef<AbortController | null>(null);
   const msgAbort = useRef<AbortController | null>(null);
@@ -191,10 +175,6 @@ export default function ChatPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
 
-  useEffect(() => {
-    dreamyScrollRef.current?.scrollTo({ top: dreamyScrollRef.current.scrollHeight });
-  }, [dreamyMessages]);
-
   // 3) 전체 방 실시간 구독
   //    - 지금 보고 있는 방 -> 메시지 목록에 붙이고 읽음 처리
   //    - 보고 있지 않은 방 -> unreadCount만 올리고 미리보기 갱신
@@ -245,68 +225,13 @@ export default function ChatPage() {
     setDraft('');
   };
 
-  const handleSelectDreamy = () => {
-    setIsDreamySelected(true);
-  };
-
-  const handleSelectRoom = (roomId: number) => {
-    setIsDreamySelected(false);
-    setSelectedRoomId(roomId);
-  };
-
-  const handleDreamySend = async () => {
-    const text = dreamyInput.trim();
-    if (!text || dreamySending) return;
-
-    setDreamyMessages((prev) => [...prev, { id: `${Date.now()}-user`, role: 'user', text }]);
-    setDreamyInput('');
-    setDreamySending(true);
-
-    try {
-      const result = await sendChatbotMessage(text);
-      setDreamyMessages((prev) => [
-        ...prev,
-        { id: `${Date.now()}-bot`, role: 'bot', text: result.assistantMessage },
-      ]);
-    } catch (err) {
-      setDreamyMessages((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}-bot-error`,
-          role: 'bot',
-          text: err instanceof Error ? err.message : '응답을 받지 못했어요. 잠시 후 다시 시도해주세요.',
-        },
-      ]);
-    } finally {
-      setDreamySending(false);
-    }
-  };
-
   return (
     <div className="flex h-full bg-slate-50 text-slate-900">
-      {/* 채팅방 목록 */}
-      <aside className="flex w-[380px] shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="px-6 pt-6 pb-4">
-          <h1 className="text-2xl font-bold">채팅</h1>
+      {/* 채팅방 목록 — 창이 좁아질 때 가장 마지막에 여백을 줄인다 */}
+      <aside className="flex w-[380px] shrink-0 flex-col border-r border-slate-200 bg-white max-md:w-[300px] max-sm:w-[240px]">
+        <div className="px-6 pt-6 pb-4 max-md:px-4 max-md:pt-4 max-md:pb-3">
+          <h1 className="text-2xl font-bold max-sm:text-xl">채팅</h1>
         </div>
-
-        {/* 드림이는 항상 목록 맨 위에 고정 (스크롤 영역 밖) */}
-        <button
-          onClick={handleSelectDreamy}
-          className={`flex w-full shrink-0 items-center gap-3 border-b border-slate-200 px-6 py-4 text-left transition-colors ${
-            isDreamySelected ? 'bg-slate-200' : 'bg-slate-100 hover:bg-slate-200'
-          }`}
-        >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white">
-            <img src="/landing_img/dreamy.svg" alt="" className="h-11 w-11" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <span className="font-semibold">드림이</span>
-            </div>
-            <p className="truncate text-sm text-slate-500">궁금한 걸 물어보세요</p>
-          </div>
-        </button>
 
         <div className="flex-1 overflow-y-auto">
           {roomsLoading && (
@@ -320,9 +245,9 @@ export default function ChatPage() {
           {rooms.map((room) => (
             <button
               key={room.roomId}
-              onClick={() => handleSelectRoom(room.roomId)}
-              className={`flex w-full items-start gap-3 border-b border-slate-100 px-6 py-4 text-left transition-colors ${
-                !isDreamySelected && room.roomId === selectedRoomId ? 'bg-indigo-50' : 'hover:bg-slate-50'
+              onClick={() => setSelectedRoomId(room.roomId)}
+              className={`flex w-full items-start gap-3 border-b border-slate-100 px-6 py-4 text-left transition-colors max-md:gap-2 max-md:px-4 max-md:py-3 ${
+                room.roomId === selectedRoomId ? 'bg-indigo-50' : 'hover:bg-slate-50'
               }`}
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
@@ -362,76 +287,13 @@ export default function ChatPage() {
 
       {/* 채팅 상세 */}
       <section className="flex flex-1 flex-col">
-        {isDreamySelected ? (
-          <>
-            <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-6 py-4">
-              <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-indigo-50">
-                <img src="/landing_img/dreamy.svg" alt="" className="h-10 w-10" />
-              </div>
-              <p className="font-semibold">드림이</p>
-            </header>
-
-            <div ref={dreamyScrollRef} className="flex-1 space-y-2 overflow-y-auto px-6 py-6">
-              {dreamyMessages.map((msg) =>
-                msg.role === 'bot' ? (
-                  <div key={msg.id} className="flex justify-start">
-                    <div className="max-w-[70%]">
-                      <p className="mb-1 text-xs font-medium text-slate-500">드림이</p>
-                      <div className="whitespace-pre-wrap rounded-2xl bg-white px-3 py-2 text-sm leading-relaxed text-slate-800 shadow-sm ring-1 ring-slate-100">
-                        {msg.text}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div key={msg.id} className="flex justify-end">
-                    <div className="max-w-[70%] whitespace-pre-wrap rounded-2xl bg-indigo-600 px-3 py-2 text-sm leading-relaxed text-white">
-                      {msg.text}
-                    </div>
-                  </div>
-                ),
-              )}
-              {dreamySending && (
-                <div className="flex justify-start">
-                  <div className="rounded-2xl bg-white px-3 py-2 text-sm text-slate-400 shadow-sm ring-1 ring-slate-100">
-                    입력 중…
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <footer className="border-t border-slate-200 bg-white px-6 py-4">
-              <div className="flex items-end gap-3">
-                <textarea
-                  value={dreamyInput}
-                  onChange={(e) => setDreamyInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                      e.preventDefault();
-                      handleDreamySend();
-                    }
-                  }}
-                  placeholder="메시지를 입력하세요..."
-                  rows={1}
-                  className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-400"
-                />
-                <button
-                  onClick={handleDreamySend}
-                  disabled={!dreamyInput.trim() || dreamySending}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white disabled:opacity-40"
-                  aria-label="메시지 보내기"
-                >
-                  ↑
-                </button>
-              </div>
-            </footer>
-          </>
-        ) : !selectedRoom ? (
+        {!selectedRoom ? (
           <div className="flex flex-1 items-center justify-center text-slate-400">
             채팅방을 선택해주세요
           </div>
         ) : (
           <>
-            <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
+            <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 max-xl:px-4 max-xl:py-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
                   {selectedRoom.partnerId != null && partnerAvatars[selectedRoom.partnerId] ? (
@@ -449,8 +311,8 @@ export default function ChatPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5">
+              <div className="flex items-center gap-3 max-xl:gap-2">
+                <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 max-xl:hidden">
                   <span className="text-xs text-slate-400">가</span>
                   <input
                     type="range"
@@ -470,7 +332,7 @@ export default function ChatPage() {
               </div>
             </header>
 
-            <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-6 py-6">
+            <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-6 py-6 max-xl:px-4 max-xl:py-4">
               {messagesLoading && (
                 <p className="text-center text-sm text-slate-400">메시지를 불러오는 중…</p>
               )}
@@ -484,26 +346,26 @@ export default function ChatPage() {
                     {showDateSeparator && <ChatDateSeparator date={msg.createdAt} />}
                     <div className={`flex ${senderIsMe ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[70%] ${senderIsMe ? 'items-end' : 'items-start'}`}>
-                      {!senderIsMe && (
-                        <p className="mb-1 text-xs font-medium text-slate-500">{msg.senderName}</p>
-                      )}
-                      <div
-                        style={{ fontSize: chatFontSize }}
-                        className={`whitespace-pre-wrap rounded-2xl px-3 py-2 leading-relaxed ${
-                          senderIsMe
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-white text-slate-800 shadow-sm ring-1 ring-slate-100'
-                        }`}
-                      >
-                        {msg.content}
-                      </div>
-                      <p
-                        className={`mt-1 text-[11px] text-slate-400 ${
-                          senderIsMe ? 'text-right' : 'text-left'
-                        }`}
-                      >
-                        {formatMessageTime(msg.createdAt)}
-                      </p>
+                        {!senderIsMe && (
+                          <p className="mb-1 text-xs font-medium text-slate-500">{msg.senderName}</p>
+                        )}
+                        <div
+                          style={{ fontSize: chatFontSize }}
+                          className={`whitespace-pre-wrap rounded-2xl px-3 py-2 leading-relaxed ${
+                            senderIsMe
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-white text-slate-800 shadow-sm ring-1 ring-slate-100'
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                        <p
+                          className={`mt-1 text-[11px] text-slate-400 ${
+                            senderIsMe ? 'text-right' : 'text-left'
+                          }`}
+                        >
+                          {formatMessageTime(msg.createdAt)}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -511,8 +373,8 @@ export default function ChatPage() {
               })}
             </div>
 
-            <footer className="border-t border-slate-200 bg-white px-6 py-4">
-              <div className="flex items-end gap-3">
+            <footer className="border-t border-slate-200 bg-white px-6 py-4 max-lg:px-3 max-lg:py-3">
+              <div className="flex items-end gap-3 max-lg:gap-2">
                 <textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
@@ -526,12 +388,12 @@ export default function ChatPage() {
                   }}
                   placeholder="메시지를 입력하세요..."
                   rows={1}
-                  className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-400"
+                  className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-400 max-lg:px-3 max-lg:py-2"
                 />
                 <button
                   onClick={handleSend}
                   disabled={!draft.trim()}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white disabled:opacity-40"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white disabled:opacity-40 max-lg:h-9 max-lg:w-9"
                   aria-label="메시지 보내기"
                 >
                   ↑

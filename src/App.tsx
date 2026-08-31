@@ -19,9 +19,11 @@ import Chat from './pages/Chat'
 import CreateTeamInfo from './pages/CreateTeamInfo'
 import CreateTeamPosition from './pages/CreateTeamPosition'
 import CreateTeamPreview from './pages/CreateTeamPreview'
+import DreamyWidget from './components/DreamyWidget'
 
 function App() {
   return (
+    <>
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
@@ -72,6 +74,8 @@ function App() {
         </Route>
       </Route>
     </Routes>
+    <DreamyWidget />
+    </>
   )
 }
 
