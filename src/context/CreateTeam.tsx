@@ -6,8 +6,8 @@ type CreateTeamState = {
   promotionText: string
   recruitmentStartDate: string
   recruitmentEndDate: string
-  role: string[] // roles -> role 로 변경
-  capacity: number // headcount -> capacity 로 변경
+  role: string[] 
+  capacity: number 
   requiredSkills: string[]
   characteristic: string
 }

@@ -259,7 +259,7 @@ export default function CreateTeamInfo() {
               onClick={handleNextStep}
               className="mt-6 w-full rounded-xl bg-[#4D4DF1] py-3.5 text-sm font-bold text-white hover:bg-[#3d3de0] flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              다음 단계 (모집 포지션) <ChevronRightIcon className="h-4 w-4" />
+              다음으로 <ChevronRightIcon className="h-4 w-4" />
             </button>
           </div>
         </main>
