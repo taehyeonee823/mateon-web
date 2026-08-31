@@ -59,10 +59,30 @@ export default function MyPage() {
   }
 
   const ACTIVITIES = [
-    { label: '지원 및 제안', count: applicationCount, icon: '/landing_img/myPage/applyment.svg', isEmoji: false },
-    { label: '모집한 팀', count: myTeamCount, icon: '/landing_img/myPage/flagicon.svg', isEmoji: false },
-    { label: '북마크', count: bookmarkCount, icon: '/landing_img/myPage/bookmark.svg', isEmoji: false },
-    { label: '팀원 평가', count: reviewableTeamCount, icon: '/landing_img/myPage/staricon.svg', isEmoji: false },
+    {
+      label: '지원 및 제안',
+      count: applicationCount,
+      icon: '/landing_img/myPage/applyment.svg',
+      path: '/my/applications',
+    },
+    {
+      label: '모집한 팀',
+      count: myTeamCount,
+      icon: '/landing_img/myPage/flagicon.svg',
+      path: '/my/teams',
+    },
+    {
+      label: '북마크',
+      count: bookmarkCount,
+      icon: '/landing_img/myPage/bookmark.svg',
+      path: '/my/bookmarks',
+    },
+    {
+      label: '팀원 평가',
+      count: reviewableTeamCount,
+      icon: '/landing_img/myPage/staricon.svg',
+      path: '/my/review',
+    },
   ]
 
   const SETTINGS = [
@@ -201,20 +221,18 @@ export default function MyPage() {
 
               <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4">
                 {ACTIVITIES.map((activity) => (
-                  <div
+                  <button
                     key={activity.label}
-                    className="flex flex-col items-center rounded-xl border border-brand-100 py-5"
+                    type="button"
+                    onClick={() => navigate(activity.path)}
+                    className="flex flex-col items-center rounded-xl border border-brand-100 py-5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
                   >
-                    {activity.isEmoji ? (
-                      <span className="text-xl">{activity.icon}</span>
-                    ) : (
-                      <img src={activity.icon} alt="" className="h-6 w-6" />
-                    )}
+                    <img src={activity.icon} alt="" className="h-6 w-6" />
                     <span className="mt-2 text-sm font-semibold text-brand-900">
                       {activity.label}
                     </span>
                     <span className="mt-0.5 text-base text-brand-700">{activity.count}건</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>

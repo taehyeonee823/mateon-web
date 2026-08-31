@@ -4,6 +4,10 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import KakaoCallback from './pages/KakaoCallback'
 import MyPage from './pages/MyPage'
+import MyApplications from './pages/MyApplications'
+import MyTeams from './pages/MyTeams'
+import MyBookmarks from './pages/MyBookmarks'
+import TeamReview from './pages/TeamReview'
 import PasswordChange from './pages/PasswordChange'
 import EditProfile from './pages/EditProfile'
 import Contest from './pages/Contest'
@@ -20,6 +24,10 @@ function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/oauth/kakao/callback" element={<KakaoCallback />} />
       <Route path="/my" element={<MyPage />} />
+      <Route path="/my/applications" element={<MyApplications />} />
+      <Route path="/my/teams" element={<MyTeams />} />
+      <Route path="/my/bookmarks" element={<MyBookmarks />} />
+      <Route path="/my/review" element={<TeamReview />} />
       <Route path="/pwchange" element={<PasswordChange />} />
       <Route path="/editprofile" element={<EditProfile />} />
       <Route
