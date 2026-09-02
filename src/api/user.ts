@@ -3,6 +3,12 @@ import { getAccessToken } from './tokenStorage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+export type ParticipatedActivity = {
+  id: number
+  title: string
+  category: string
+}
+
 export type UserProfile = {
   id: number
   email: string
@@ -21,6 +27,7 @@ export type UserProfile = {
   profileImageUrl: string | null
   collaborationTemperature: number | null
   collaborationReviewCount: number
+  participatedActivities: ParticipatedActivity[]
 }
 
 export async function getMyProfile() {

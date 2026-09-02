@@ -1,5 +1,6 @@
 import type { ApiResponse } from './auth'
 import { getAccessToken } from './tokenStorage'
+import { getTeamDetail } from './team'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -206,4 +207,53 @@ export async function getReviewableTeams(): Promise<TeamReviewTargets[]> {
 export async function getReviewableTeamCount(): Promise<number> {
   const teams = await getReviewableTeams()
   return teams.filter((t) => t.targets.some((target) => !target.alreadyReviewed)).length
+}
+
+export type ParticipatedActivity = {
+  teamId: number
+  // 팀 모집글 제목이 아니라, 연결된 공모전/활동의 실제 이름 (없으면 모집글 제목으로 대체)
+  title: string
+  role: 'LEADER' | 'MEMBER'
+  startDate: string
+}
+
+// 내가 리더로 모집한 팀 + 승인되어 합류한 팀을 모아, 각 팀에 연결된 공모전 이름을 보여준다.
+export async function getParticipatedActivities(): Promise<ParticipatedActivity[]> {
+  const [myTeams, applications] = await Promise.all([
+    getMyTeams().catch(() => [] as TeamPost[]),
+    getMyApplications().catch(() => [] as Application[]),
+  ])
+
+  const leaderEntries: ParticipatedActivity[] = myTeams.map((t) => ({
+    teamId: t.id,
+    title: t.connectedActivityTitle || t.title,
+    role: 'LEADER',
+    startDate: t.recruitmentStartDate,
+  }))
+
+  const leaderTeamIds = new Set(myTeams.map((t) => t.id))
+  const approvedTeamIds = Array.from(
+    new Set(
+      applications
+        .filter((a) => a.status === 'APPROVED' && !leaderTeamIds.has(a.teamId))
+        .map((a) => a.teamId),
+    ),
+  )
+
+  const memberDetails = await Promise.all(
+    approvedTeamIds.map((id) => getTeamDetail(id).catch(() => null)),
+  )
+
+  const memberEntries: ParticipatedActivity[] = memberDetails
+    .filter((d): d is NonNullable<typeof d> => d !== null)
+    .map((d) => ({
+      teamId: d.id,
+      title: d.connectedActivityTitle || d.title,
+      role: 'MEMBER',
+      startDate: d.recruitmentStartDate,
+    }))
+
+  return [...leaderEntries, ...memberEntries].sort((a, b) =>
+    b.startDate.localeCompare(a.startDate),
+  )
 }
