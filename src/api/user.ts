@@ -3,6 +3,12 @@ import { getAccessToken } from './tokenStorage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+export type ParticipatedActivity = {
+  id: number
+  title: string
+  category: string
+}
+
 export type UserProfile = {
   id: number
   email: string
@@ -21,6 +27,7 @@ export type UserProfile = {
   profileImageUrl: string | null
   collaborationTemperature: number | null
   collaborationReviewCount: number
+  participatedActivities: ParticipatedActivity[]
 }
 
 export async function getMyProfile() {
@@ -157,4 +164,29 @@ export async function changePassword(
   if (!response.ok || !result?.success) {
     throw new Error(result?.message || `비밀번호 변경 실패: ${response.status}`)
   }
+}
+
+export type PublicUserProfile = {
+  id: number
+  name: string
+  profileImageUrl: string | null
+}
+
+// 타인의 공개 프로필 조회 (DM 상대방 사진 등에 사용). 본인 이메일 등 민감 정보는 내려오지 않음
+export async function getPublicUserProfile(userId: number): Promise<PublicUserProfile> {
+  const accessToken = getAccessToken()
+  if (!accessToken) throw new Error('로그인이 필요합니다.')
+
+  const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+
+  const text = await response.text()
+  const result: ApiResponse<PublicUserProfile> | null = text ? JSON.parse(text) : null
+
+  if (!response.ok || !result?.success) {
+    throw new Error(result?.message || `사용자 정보 조회 실패: ${response.status}`)
+  }
+
+  return result.data
 }

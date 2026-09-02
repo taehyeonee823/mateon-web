@@ -5,6 +5,7 @@ import {
   fetchChatMessages,
   markChatAsRead,
 } from '../api/chat';
+import { getPublicUserProfile } from '../api/user';
 import { useAuth } from '../context/AuthContext';
 import {
   connectStomp,
@@ -35,6 +36,35 @@ function formatMessageTime(iso: string): string {
   return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
 }
 
+const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
+
+// "YYYY-MM-DDTHH:mm:ss" -> 날짜 변경선 문구 ("2026년 8월 31일 월요일")
+function formatChatDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${DAY_LABELS[date.getDay()]}요일`;
+}
+
+function isSameDay(a: string, b: string): boolean {
+  const dateA = new Date(a);
+  const dateB = new Date(b);
+  return (
+    dateA.getFullYear() === dateB.getFullYear() &&
+    dateA.getMonth() === dateB.getMonth() &&
+    dateA.getDate() === dateB.getDate()
+  );
+}
+
+function ChatDateSeparator({ date }: { date: string }) {
+  return (
+    <div className="my-3 flex items-center px-2">
+      <div className="h-px flex-1 bg-slate-200" />
+      <span className="mx-3 text-xs font-medium text-slate-400">{formatChatDate(date)}</span>
+      <div className="h-px flex-1 bg-slate-200" />
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const { profile } = useAuth();
   const currentUserId = profile?.id;
@@ -42,10 +72,14 @@ export default function ChatPage() {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const [partnerAvatars, setPartnerAvatars] = useState<Record<number, string | null>>({});
 
   const [messages, setMessages] = useState<StompChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [draft, setDraft] = useState('');
+
+  // 채팅 말풍선 글자 크기 조절 (기본 14px = text-sm)
+  const [chatFontSize, setChatFontSize] = useState(14);
 
   const listAbort = useRef<AbortController | null>(null);
   const msgAbort = useRef<AbortController | null>(null);
@@ -86,6 +120,26 @@ export default function ChatPage() {
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 1-1) DM 상대방 프로필 사진 로드 — ChatRoom 목록 응답 자체엔 사진이 없어서
+  //      partnerId별로 공개 프로필을 따로 조회한다 (모바일 앱과 동일한 방식).
+  useEffect(() => {
+    const partnerIds = Array.from(
+      new Set(
+        rooms
+          .map((r) => r.partnerId)
+          .filter((id): id is number => id != null && !(id in partnerAvatars)),
+      ),
+    );
+    if (partnerIds.length === 0) return;
+
+    partnerIds.forEach((id) => {
+      getPublicUserProfile(id)
+        .then((p) => setPartnerAvatars((prev) => ({ ...prev, [id]: p.profileImageUrl })))
+        .catch(() => setPartnerAvatars((prev) => ({ ...prev, [id]: null })));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rooms]);
 
   // 2) 선택된 방의 메시지 이력 로드 + 읽음 처리
   useEffect(() => {
@@ -172,11 +226,11 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-900">
-      {/* 채팅방 목록 */}
-      <aside className="flex w-[380px] shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="px-6 pt-6 pb-4">
-          <h1 className="text-2xl font-bold">채팅</h1>
+    <div className="flex h-full bg-slate-50 text-slate-900">
+      {/* 채팅방 목록 — 창이 좁아질 때 가장 마지막에 여백을 줄인다 */}
+      <aside className="flex w-[380px] shrink-0 flex-col border-r border-slate-200 bg-white max-md:w-[300px] max-sm:w-[240px]">
+        <div className="px-6 pt-6 pb-4 max-md:px-4 max-md:pt-4 max-md:pb-3">
+          <h1 className="text-2xl font-bold max-sm:text-xl">채팅</h1>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -192,12 +246,20 @@ export default function ChatPage() {
             <button
               key={room.roomId}
               onClick={() => setSelectedRoomId(room.roomId)}
-              className={`flex w-full items-start gap-3 border-b border-slate-100 px-6 py-4 text-left transition-colors ${
+              className={`flex w-full items-start gap-3 border-b border-slate-100 px-6 py-4 text-left transition-colors max-md:gap-2 max-md:px-4 max-md:py-3 ${
                 room.roomId === selectedRoomId ? 'bg-indigo-50' : 'hover:bg-slate-50'
               }`}
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
-                <span className="text-sm font-semibold text-slate-400">{room.title?.[0]}</span>
+                {room.partnerId != null && partnerAvatars[room.partnerId] ? (
+                  <img
+                    src={partnerAvatars[room.partnerId]!}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <img src="/landing_img/myPage/user.svg" alt="" className="h-7 w-7 opacity-40" />
+                )}
               </div>
 
               <div className="min-w-0 flex-1">
@@ -231,65 +293,88 @@ export default function ChatPage() {
           </div>
         ) : (
           <>
-            <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
+            <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 max-xl:px-4 max-xl:py-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
-                  <span className="text-sm font-semibold text-slate-400">
-                    {selectedRoom.title?.[0]}
-                  </span>
+                  {selectedRoom.partnerId != null && partnerAvatars[selectedRoom.partnerId] ? (
+                    <img
+                      src={partnerAvatars[selectedRoom.partnerId]!}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <img src="/landing_img/myPage/user.svg" alt="" className="h-7 w-7 opacity-40" />
+                  )}
                 </div>
                 <div>
                   <p className="font-semibold">{selectedRoom.title}</p>
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex items-center gap-3 max-xl:gap-2">
+                <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 max-xl:hidden">
+                  <span className="text-xs text-slate-400">가</span>
+                  <input
+                    type="range"
+                    min={9}
+                    max={22}
+                    step={1}
+                    value={chatFontSize}
+                    onChange={(e) => setChatFontSize(Number(e.target.value))}
+                    aria-label="채팅 글자 크기 조절"
+                    className="h-1 w-24 cursor-pointer accent-indigo-600"
+                  />
+                  <span className="text-base text-slate-400">가</span>
+                </div>
                 <button className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium hover:bg-slate-50">
                   프로필 보기
                 </button>
               </div>
             </header>
 
-            <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-6 py-6">
+            <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-6 py-6 max-xl:px-4 max-xl:py-4">
               {messagesLoading && (
                 <p className="text-center text-sm text-slate-400">메시지를 불러오는 중…</p>
               )}
 
-              {messages.map((msg) => {
+              {messages.map((msg, idx) => {
                 const senderIsMe = msg.senderId === currentUserId;
+                const prevMsg = messages[idx - 1];
+                const showDateSeparator = !prevMsg || !isSameDay(prevMsg.createdAt, msg.createdAt);
                 return (
-                  <div
-                    key={msg.messageId}
-                    className={`flex ${senderIsMe ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-[70%] ${senderIsMe ? 'items-end' : 'items-start'}`}>
-                      {!senderIsMe && (
-                        <p className="mb-1 text-xs font-medium text-slate-500">{msg.senderName}</p>
-                      )}
-                      <div
-                        className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                          senderIsMe
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-white text-slate-800 shadow-sm ring-1 ring-slate-100'
-                        }`}
-                      >
-                        {msg.content}
+                  <div key={msg.messageId}>
+                    {showDateSeparator && <ChatDateSeparator date={msg.createdAt} />}
+                    <div className={`flex ${senderIsMe ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[70%] ${senderIsMe ? 'items-end' : 'items-start'}`}>
+                        {!senderIsMe && (
+                          <p className="mb-1 text-xs font-medium text-slate-500">{msg.senderName}</p>
+                        )}
+                        <div
+                          style={{ fontSize: chatFontSize }}
+                          className={`whitespace-pre-wrap rounded-2xl px-3 py-2 leading-relaxed ${
+                            senderIsMe
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-white text-slate-800 shadow-sm ring-1 ring-slate-100'
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                        <p
+                          className={`mt-1 text-[11px] text-slate-400 ${
+                            senderIsMe ? 'text-right' : 'text-left'
+                          }`}
+                        >
+                          {formatMessageTime(msg.createdAt)}
+                        </p>
                       </div>
-                      <p
-                        className={`mt-1 text-[11px] text-slate-400 ${
-                          senderIsMe ? 'text-right' : 'text-left'
-                        }`}
-                      >
-                        {formatMessageTime(msg.createdAt)}
-                      </p>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <footer className="border-t border-slate-200 bg-white px-6 py-4">
-              <div className="flex items-end gap-3">
+            <footer className="border-t border-slate-200 bg-white px-6 py-4 max-lg:px-3 max-lg:py-3">
+              <div className="flex items-end gap-3 max-lg:gap-2">
                 <textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
@@ -303,12 +388,12 @@ export default function ChatPage() {
                   }}
                   placeholder="메시지를 입력하세요..."
                   rows={1}
-                  className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-400"
+                  className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-400 max-lg:px-3 max-lg:py-2"
                 />
                 <button
                   onClick={handleSend}
                   disabled={!draft.trim()}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white disabled:opacity-40"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white disabled:opacity-40 max-lg:h-9 max-lg:w-9"
                   aria-label="메시지 보내기"
                 >
                   ↑

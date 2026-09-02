@@ -9,8 +9,10 @@ import {
   fetchBookmarkedEventIds,
   getMyApplications,
   getMyTeams,
+  getParticipatedActivities,
   getReceivedOffers,
   getReviewableTeamCount,
+  type ParticipatedActivity,
 } from '../api/activity'
 import { parsePortfolioSummary } from '../utils/portfolio'
 import { getUnivByEmail } from '../utils/univ'
@@ -24,6 +26,7 @@ export default function MyPage() {
   const [reviewableTeamCount, setReviewableTeamCount] = useState(0)
   const [bookmarkCount, setBookmarkCount] = useState(0)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [participatedActivities, setParticipatedActivities] = useState<ParticipatedActivity[]>([])
 
   const { bulletPoints, summaryText } = parsePortfolioSummary(profile?.portfolio ?? null)
   const univ = getUnivByEmail(profile?.schoolEmail ?? profile?.email)
@@ -46,6 +49,10 @@ export default function MyPage() {
     fetchBookmarkedEventIds()
       .then((ids) => setBookmarkCount(ids.length))
       .catch(() => setBookmarkCount(0))
+
+    getParticipatedActivities()
+      .then(setParticipatedActivities)
+      .catch(() => setParticipatedActivities([]))
   }, [isLoggedIn])
 
   const handleLogout = () => {
@@ -59,10 +66,30 @@ export default function MyPage() {
   }
 
   const ACTIVITIES = [
-    { label: '지원 및 제안', count: applicationCount, icon: '/landing_img/myPage/applyment.svg', isEmoji: false },
-    { label: '모집한 팀', count: myTeamCount, icon: '/landing_img/myPage/flagicon.svg', isEmoji: false },
-    { label: '북마크', count: bookmarkCount, icon: '/landing_img/myPage/bookmark.svg', isEmoji: false },
-    { label: '팀원 평가', count: reviewableTeamCount, icon: '/landing_img/myPage/staricon.svg', isEmoji: false },
+    {
+      label: '지원 및 제안',
+      count: applicationCount,
+      icon: '/landing_img/myPage/applyment.svg',
+      path: '/my/applications',
+    },
+    {
+      label: '모집한 팀',
+      count: myTeamCount,
+      icon: '/landing_img/myPage/flagicon.svg',
+      path: '/my/teams',
+    },
+    {
+      label: '북마크',
+      count: bookmarkCount,
+      icon: '/landing_img/myPage/bookmark.svg',
+      path: '/my/bookmarks',
+    },
+    {
+      label: '팀원 평가',
+      count: reviewableTeamCount,
+      icon: '/landing_img/myPage/staricon.svg',
+      path: '/my/review',
+    },
   ]
 
   const SETTINGS = [
@@ -97,7 +124,7 @@ export default function MyPage() {
       <div className="md:pl-64">
         <Topbar />
 
-        <main className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-start">
+        <main className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-4 lg:flex-row lg:items-start">
           {/* 왼쪽: 프로필 · 협업온도 · 계정 설정 */}
           <aside className="w-full shrink-0 lg:w-72">
             <div className="rounded-2xl border border-brand-100 p-6">
@@ -201,20 +228,18 @@ export default function MyPage() {
 
               <div className="grid grid-cols-2 gap-3 p-5 sm:grid-cols-4">
                 {ACTIVITIES.map((activity) => (
-                  <div
+                  <button
                     key={activity.label}
-                    className="flex flex-col items-center rounded-xl border border-brand-100 py-5"
+                    type="button"
+                    onClick={() => navigate(activity.path)}
+                    className="flex flex-col items-center rounded-xl border border-brand-100 py-5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
                   >
-                    {activity.isEmoji ? (
-                      <span className="text-xl">{activity.icon}</span>
-                    ) : (
-                      <img src={activity.icon} alt="" className="h-6 w-6" />
-                    )}
+                    <img src={activity.icon} alt="" className="h-6 w-6" />
                     <span className="mt-2 text-sm font-semibold text-brand-900">
                       {activity.label}
                     </span>
                     <span className="mt-0.5 text-base text-brand-700">{activity.count}건</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -272,6 +297,32 @@ export default function MyPage() {
                     AI가 핵심 경력과 역량을 요약해 한눈에 보여드려요
                   </span>
                 </button>
+              )}
+            </div>
+
+            <div className="mt-8 overflow-hidden rounded-2xl border border-[#D8E1FD]">
+              <div className="flex items-center gap-2 border-b border-[#E8EEFF] bg-[#F5F7FF] p-4">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2554F0]/10 p-1">
+                  <img src="/landing_img/myPage/flagicon.svg" alt="" className="h-full w-full object-contain" />
+                </span>
+                <p className="text-base font-bold text-brand-900">참여했던 활동</p>
+              </div>
+
+              {participatedActivities.length === 0 ? (
+                <p className="p-6 text-center text-sm text-brand-400">아직 참여한 활동이 없어요.</p>
+              ) : (
+                <div className="flex flex-col divide-y divide-brand-100 px-5">
+                  {participatedActivities.map((activity) => (
+                    <div key={activity.teamId} className="flex items-center gap-2 py-3.5">
+                      <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-500">
+                        {activity.role === 'LEADER' ? '팀장' : '팀원'}
+                      </span>
+                      <span className="truncate text-sm font-medium text-brand-800">
+                        {activity.title}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
