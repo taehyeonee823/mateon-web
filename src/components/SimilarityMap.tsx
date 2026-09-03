@@ -102,8 +102,8 @@ export default function SimilarityMap({ eventId }: { eventId: number }) {
               cy={CENTER}
               r={ring.radius * scale}
               fill="none"
-              stroke="#ECECF5"
-              strokeWidth={1}
+              stroke="#B3B3CC" // 동심원 색
+              strokeWidth={1.25}
               strokeDasharray="3 3"
               style={{
                 opacity: mounted ? 1 : 0,

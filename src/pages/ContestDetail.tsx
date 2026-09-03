@@ -214,7 +214,7 @@ export default function ContestDetailPage() {
               ))}
             </section>
           )}
-          <section className="flex flex-col gap-4 rounded-2xl border border-[#ECECF5] p-5">
+          <section className="flex flex-col gap-4 rounded-2xl border border-[#ECECF5] bg-[#F5F5F9] p-5"> 
           <h2 className="text-[15px] font-bold text-[#1B1B33]">비슷한 공모전 둘러보기</h2>
           <SimilarityMap eventId={event.id} />
           </section>
