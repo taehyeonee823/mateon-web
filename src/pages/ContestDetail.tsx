@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { BookmarkIcon, CalendarIcon, UsersIcon } from '../components/icons'
+import SimilarityMap from '../components/SimilarityMap'
 import {
   fetchEventDetail,
   bookmarkEvent,
   unbookmarkEvent,
   computeDDay,
   type EventItem,
-} from '../api/event' 
+} from '../api/event'
 
 
 function ArrowLeftIcon({ className = '' }: { className?: string }) {
@@ -213,6 +214,10 @@ export default function ContestDetailPage() {
               ))}
             </section>
           )}
+          <section className="flex flex-col gap-4 rounded-2xl border border-[#ECECF5] p-5">
+          <h2 className="text-[15px] font-bold text-[#1B1B33]">비슷한 공모전 둘러보기</h2>
+          <SimilarityMap eventId={event.id} />
+          </section>
         </div>
 
         {/* Sticky info card (desktop) */}

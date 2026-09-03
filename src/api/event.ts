@@ -350,3 +350,92 @@ export async function extractEventImage(
 
   return result.data;
 }
+
+// ── 유사도 지도 (similarity-map) ────────────────────────────
+
+export type SimilarityMapPoint = {
+  id: number;
+  title: string;
+  category: EventCategory | null;
+  field: EventField | null;
+  fieldLabel: string | null;
+  organizer: string | null;
+  detailUrl: string | null;
+  x: number;
+  y: number;
+  radius: number;
+  similarity: number;
+  rankPercentile: number;
+};
+
+export type SimilarityMapQuery = {
+  id: number;
+  title: string;
+  category: EventCategory | null;
+  field: EventField | null;
+  fieldLabel: string | null;
+  organizer: string | null;
+  detailUrl: string | null;
+};
+
+export type SimilarityMapReferenceRing = {
+  percentile: number;
+  radius: number;
+  similarityAtPercentile: number;
+};
+
+export type EventSimilarityMap = {
+  candidatePoolTotal: number;
+  maxRadius: number;
+  minRadius: number;
+  radialJitter: number;
+  points: SimilarityMapPoint[];
+  query: SimilarityMapQuery;
+  referenceRings: SimilarityMapReferenceRing[];
+};
+
+// 등록 직후처럼 기준 활동 임베딩이 아직 준비 안 됐을 때 백엔드가 던지는 에러.
+// 호출부에서 "잠시 후 다시 시도" 안내를 보여주려면 이 클래스로 구분한다.
+export class EventEmbeddingNotReadyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'EventEmbeddingNotReadyError';
+  }
+}
+
+export type FetchEventSimilarityMapParams = {
+  topN?: number;
+};
+
+export async function fetchEventSimilarityMap(
+  eventId: number,
+  params?: FetchEventSimilarityMapParams,
+  signal?: AbortSignal
+): Promise<EventSimilarityMap> {
+  const query = new URLSearchParams();
+  if (params?.topN !== undefined) query.set('topN', String(params.topN));
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/events/${eventId}/similarity-map?${query.toString()}`,
+    {
+      headers: await optionalAuthHeader(),
+      signal,
+    }
+  );
+
+  const text = await response.text();
+  const result: (ApiResponse<EventSimilarityMap> & { code?: string }) | null = text
+    ? JSON.parse(text)
+    : null;
+
+  if (!response.ok || !result?.success) {
+    if (response.status === 400 && result?.code === 'EVENT_EMBEDDING_NOT_READY') {
+      throw new EventEmbeddingNotReadyError(
+        result?.message || '아직 기준 활동의 임베딩이 준비되지 않았어요.'
+      );
+    }
+    throw new Error(result?.message || `유사도 지도 조회 실패: ${response.status}`);
+  }
+
+  return result.data;
+}
