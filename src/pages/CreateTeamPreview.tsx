@@ -45,13 +45,13 @@ export default function CreateTeamPreview() {
      
       await createTeamRecruitment(payload)
       
-      alert('팀 모집글이 성공적으로 등록되었습니다!')
+      alert('팀 모집글이 성공적으로 등록되었어요!')
       reset() 
       navigate('/contest') 
       
     } catch (error) {
       console.error(error)
-      alert(error instanceof Error ? error.message : '등록 중 오류가 발생했습니다.')
+      alert(error instanceof Error ? error.message : '등록 중 오류가 발생했어요.')
     } finally {
       setIsSubmitting(false)
     }

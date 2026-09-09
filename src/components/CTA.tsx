@@ -108,7 +108,7 @@ export default function CTA() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <button className="mt-6 flex flex-wrap gap-3">
               <a
                 href="#contact"
                 className="flex items-center gap-2 rounded-2xl bg-black px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
@@ -120,7 +120,7 @@ export default function CTA() {
                 />
                 TestFlight로 시작하기
               </a>
-            </div>
+            </button>
           </div>
         </div>
 

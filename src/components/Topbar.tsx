@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronDownIcon, SearchIcon } from './icons'
 import { useAuth } from '../context/AuthContext'
@@ -19,36 +19,6 @@ const NOTIFICATION_ICON: Record<NotificationType, { icon: string; bg: string }> 
   APPROVE: { icon: '/noti/rocket_fill.svg', bg: 'bg-emerald-50' },
   REJECT: { icon: '/noti/rocket_fill.svg', bg: 'bg-rose-50' },
   INFO: { icon: '/noti/message_fill.svg', bg: 'bg-[#2554F0]/10' },
-}
-
-type GroupedNotification = NotificationResponseDTO & { count: number }
-
-// 팀/활동 알림은 하나하나 내용이 다 달라서 묶지 않고, 메시지(채팅) 알림만
-// 같은 상대와 연달아 왔을 때 한 줄로 묶어 "+N"으로 나머지 개수를 표시한다.
-function isMessageNotification(n: NotificationResponseDTO) {
-  const isTeamRelated = n.title.includes('팀') || n.content.includes('팀')
-  return !isTeamRelated && n.type === 'INFO'
-}
-
-function groupConsecutiveNotifications(list: NotificationResponseDTO[]): GroupedNotification[] {
-  const grouped: GroupedNotification[] = []
-
-  for (const n of list) {
-    const last = grouped[grouped.length - 1]
-    if (
-      last &&
-      isMessageNotification(n) &&
-      isMessageNotification(last) &&
-      last.title === n.title &&
-      last.type === n.type
-    ) {
-      last.count += 1
-    } else {
-      grouped.push({ ...n, count: 1 })
-    }
-  }
-
-  return grouped
 }
 
 function getNotificationIcon(n: NotificationResponseDTO) {
@@ -91,7 +61,6 @@ export default function Topbar() {
   const [isBellHovered, setIsBellHovered] = useState(false)
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false)
   const [isDrawerVisible, setIsDrawerVisible] = useState(false)
-  const [selectedNotification, setSelectedNotification] = useState<NotificationResponseDTO | null>(null)
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('전체')
   const [keyword, setKeyword] = useState('')
@@ -126,11 +95,7 @@ export default function Topbar() {
       .catch(() => setAllNotifications([]))
   }, [isLoggedIn])
 
-  const groupedNotifications = useMemo(
-    () => groupConsecutiveNotifications(allNotifications),
-    [allNotifications],
-  )
-  const notifications = groupedNotifications.slice(0, 3)
+  const notifications = allNotifications.slice(0, 3)
   const hasUnread = allNotifications.some((n) => !n.isRead)
 
   useEffect(() => {
@@ -278,14 +243,7 @@ export default function Topbar() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <span className="flex min-w-0 items-center gap-1">
-                        <p className="truncate text-sm font-semibold text-brand-900">{n.title}</p>
-                        {n.count > 1 && (
-                          <span className="shrink-0 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-600">
-                            +{n.count - 1}
-                          </span>
-                        )}
-                      </span>
+                      <p className="truncate text-sm font-semibold text-brand-900">{n.title}</p>
                       <span className="flex shrink-0 items-center gap-1.5">
                         <span className="text-[10px] text-brand-400">
                           {formatRelativeTime(n.createdAt)}
@@ -328,12 +286,12 @@ export default function Topbar() {
               isDrawerVisible ? 'translate-x-0' : 'translate-x-full'
             }`}
           >
-            <div className="relative flex items-center justify-center border-b border-brand-100 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-brand-100 px-5 py-4">
               <button
                 type="button"
                 aria-label="닫기"
                 onClick={closeNotificationDrawer}
-                className="absolute left-5 flex h-8 w-8 items-center justify-center rounded-full text-xl text-brand-400 transition-colors hover:bg-brand-50 hover:text-brand-700"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-4xl text-brand-400 transition-colors hover:bg-brand-50 hover:text-brand-700"
               >
                 »
               </button>
@@ -341,13 +299,11 @@ export default function Topbar() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-3">
-              {groupedNotifications.length > 0 ? (
-                groupedNotifications.map((n) => (
-                  <button
+              {allNotifications.length > 0 ? (
+                allNotifications.map((n) => (
+                  <div
                     key={n.id}
-                    type="button"
-                    onClick={() => setSelectedNotification(n)}
-                    className="flex w-full items-start gap-2.5 rounded-xl px-3 py-3 text-left hover:bg-brand-50/60"
+                    className="flex items-start gap-2.5 rounded-xl px-3 py-3 text-left hover:bg-brand-50/60"
                   >
                     <span
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-1.5 ${getNotificationIcon(n).bg}`}
@@ -361,14 +317,7 @@ export default function Topbar() {
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <span className="flex min-w-0 items-center gap-1">
-                          <p className="truncate text-sm font-semibold text-brand-900">{n.title}</p>
-                          {n.count > 1 && (
-                            <span className="shrink-0 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-600">
-                              +{n.count - 1}
-                            </span>
-                          )}
-                        </span>
+                        <p className="truncate text-sm font-semibold text-brand-900">{n.title}</p>
                         <span className="flex shrink-0 items-center gap-1.5">
                           <span className="text-[10px] text-brand-400">
                             {formatRelativeTime(n.createdAt)}
@@ -376,9 +325,9 @@ export default function Topbar() {
                           {!n.isRead && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
                         </span>
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-brand-500">{n.content}</p>
+                      <p className="mt-0.5 text-xs text-brand-500">{n.content}</p>
                     </div>
-                  </button>
+                  </div>
                 ))
               ) : (
                 <p className="px-3 py-8 text-center text-sm text-brand-400">알림이 없어요.</p>
@@ -386,50 +335,6 @@ export default function Topbar() {
             </div>
           </div>
         </>
-      )}
-
-      {selectedNotification && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/30 p-6 backdrop-blur-sm"
-          onClick={() => setSelectedNotification(null)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-2xl bg-white p-7 shadow-xl shadow-black/20"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full p-2 ${getNotificationIcon(selectedNotification).bg}`}
-                >
-                  <img
-                    src={getNotificationIcon(selectedNotification).icon}
-                    alt=""
-                    className="h-full w-full object-contain"
-                  />
-                </span>
-                <div>
-                  <p className="text-lg font-bold text-brand-900">{selectedNotification.title}</p>
-                  <p className="text-sm text-brand-400">
-                    {formatRelativeTime(selectedNotification.createdAt)}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                aria-label="닫기"
-                onClick={() => setSelectedNotification(null)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-brand-400 transition-colors hover:bg-brand-50 hover:text-brand-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="mt-5 whitespace-pre-wrap text-base leading-relaxed text-brand-700">
-              {selectedNotification.content}
-            </p>
-          </div>
-        </div>
       )}
 
       {isLoggedIn && profile ? (

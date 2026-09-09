@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDownIcon, HomeIcon, SearchIcon, UsersIcon, ChatIcon, PencilIcon } from './icons'
+import { useAuth } from '../context/AuthContext'
 
 const ACTIVITY_TABS = [
   { label: '공모전', href: '/contest', comingSoon: false },
@@ -12,6 +13,8 @@ const ACTIVITY_TABS = [
 export default function Sidebar() {
   const [activityOpen, setActivityOpen] = useState(true)
   const location = useLocation()
+  const navigate = useNavigate()
+  const { isLoggedIn } = useAuth()
 
   const activeClass =
     'flex items-center gap-3 rounded-xl bg-brand-50 px-4 py-2.5 text-base font-bold text-[#4D4DF1]'
@@ -70,10 +73,16 @@ export default function Sidebar() {
           </div>
         )}
 
-        <Link to="/teams/new" className={location.pathname === '/teams/new' ? activeClass : inactiveClass}>
+        <button
+          type="button"
+          onClick={() => navigate(isLoggedIn ? '/teams/new' : '/login')}
+          className={
+            location.pathname === '/teams/new' ? activeClass : inactiveClass
+          }
+        >
           <PencilIcon className="h-5 w-5 shrink-0 text-[#6F7095]" />
           팀 만들기
-        </Link>
+        </button>
 
         <Link to="/chat" className={location.pathname === '/chat' ? activeClass : inactiveClass}>
           <ChatIcon className="h-5 w-5 shrink-0 text-[#6F7095]" />
