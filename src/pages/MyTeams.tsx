@@ -59,7 +59,11 @@ export default function MyTeams() {
           ) : teams.length > 0 ? (
             <div className="flex flex-col gap-3">
               {teams.map((t) => (
-                <div key={t.id} className="rounded-2xl border border-brand-100 p-5">
+                <Link
+  key={t.id}
+  to={`/my/teams/${t.id}`}
+  className="block rounded-2xl border border-brand-100 p-5 transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-sm"
+>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-bold text-brand-900">{t.title}</p>
@@ -100,7 +104,7 @@ export default function MyTeams() {
                       {t.recruitmentEndDate.replaceAll('-', '.')}
                     </span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
