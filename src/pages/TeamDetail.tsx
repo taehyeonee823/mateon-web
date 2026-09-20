@@ -3,21 +3,35 @@ import { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
-import { getMyTeams, type TeamPost } from '../api/activity'
+import { getTeamDetail } from '../api/team'
+import type { TeamDetail as TeamDetailType } from '../types/team'
+
+const TABS = [
+  { key: 'info', label: '팀 정보' },
+  { key: 'members', label: '지원자 관리' },
+  { key: 'roles', label: '팀원 모으기' },
+] as const
+
+type TabKey = (typeof TABS)[number]['key']
 
 export default function TeamDetail() {
   const { id } = useParams<{ id: string }>()
 
-  const [team, setTeam] = useState<TeamPost | null>(null)
+  const [team, setTeam] = useState<TeamDetailType | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<TabKey>('info')
 
   useEffect(() => {
     if (!id) return
+    setLoading(true)
+    setError(null)
 
-    getMyTeams()
-      .then((data) => {
-        const found = data.find((item) => String(item.id) === id)
-        setTeam(found ?? null)
+    getTeamDetail(Number(id))
+      .then((data) => setTeam(data))
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : '팀 정보를 불러오지 못했어요.')
+        setTeam(null)
       })
       .finally(() => setLoading(false))
   }, [id])
@@ -26,38 +40,28 @@ export default function TeamDetail() {
     return (
       <div className="min-h-screen bg-white">
         <Sidebar />
-
         <div className="md:pl-64">
           <Topbar />
-
-          <main className="mx-auto max-w-3xl px-6 py-12">
+          <main className="mx-auto max-w-4xl px-6 py-12">
             <div className="h-5 w-24 animate-pulse rounded bg-brand-50" />
-            <div className="mt-8 h-10 w-2/3 animate-pulse rounded bg-brand-50" />
-            <div className="mt-3 h-5 w-1/2 animate-pulse rounded bg-brand-50" />
-
-            <div className="mt-10 space-y-4">
-              <div className="h-40 animate-pulse rounded-2xl bg-brand-50" />
-              <div className="h-56 animate-pulse rounded-2xl bg-brand-50" />
-            </div>
+            <div className="mt-6 h-40 animate-pulse rounded-2xl bg-brand-50" />
+            <div className="mt-6 h-72 animate-pulse rounded-2xl bg-brand-50" />
           </main>
         </div>
       </div>
     )
   }
 
-  if (!team) {
+  if (!team || error) {
     return (
       <div className="min-h-screen bg-white">
         <Sidebar />
-
         <div className="md:pl-64">
           <Topbar />
-
-          <main className="mx-auto max-w-3xl px-6 py-20 text-center">
+          <main className="mx-auto max-w-4xl px-6 py-20 text-center">
             <p className="text-sm text-brand-400">
-              팀 정보를 찾을 수 없어요.
+              {error || '팀 정보를 찾을 수 없어요.'}
             </p>
-
             <Link
               to="/my/teams"
               className="mt-4 inline-block text-sm font-semibold text-brand-600 hover:text-brand-800"
@@ -77,202 +81,83 @@ export default function TeamDetail() {
       <div className="md:pl-64">
         <Topbar />
 
-        <main className="mx-auto max-w-3xl px-6 py-10">
-
+        <main className="mx-auto max-w-4xl px-6 py-10">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-brand-400">
-            <Link
-              to="/my"
-              className="hover:text-brand-600"
-            >
-              내 활동
-            </Link>
-
+            <Link to="/my" className="hover:text-brand-600">내 활동</Link>
             <span>/</span>
-
-            <Link
-              to="/my/teams"
-              className="hover:text-brand-600"
-            >
-              모집한 팀
-            </Link>
-
+            <Link to="/my/teams" className="hover:text-brand-600">모집한 팀</Link>
             <span>/</span>
-
-            <span className="text-brand-700">
-              팀 상세
-            </span>
+            <span className="text-brand-700">팀 상세</span>
           </div>
 
-          {/* Header */}
-          <section className="mt-8">
+          {/* Header card */}
+          <section className="mt-6 rounded-2xl border border-brand-100 p-6">
             <div className="flex items-start justify-between gap-4">
-
               <div className="min-w-0">
-                <h1 className="text-3xl font-bold tracking-tight text-brand-900">
+                <span
+                  className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    team.recruiting
+                      ? 'bg-emerald-50 text-emerald-600'
+                      : 'bg-brand-50 text-brand-400'
+                  }`}
+                >
+                  {team.recruiting ? '모집중' : '모집완료'}
+                </span>
+
+                <h1 className="mt-2 text-2xl font-bold tracking-tight text-brand-900">
                   {team.title}
                 </h1>
 
                 {team.connectedActivityTitle && (
-                  <p className="mt-2 text-sm text-brand-400">
+                  <p className="mt-1 text-sm text-brand-400">
                     {team.connectedActivityTitle}
+                  </p>
+                )}
+
+                {team.promotionText && (
+                  <p className="mt-3 text-sm leading-6 text-brand-600">
+                    {team.promotionText}
                   </p>
                 )}
               </div>
 
-              <span
-                className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold ${
-                  team.recruiting
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : 'bg-brand-50 text-brand-400'
+              {team.leader && (
+                <Link
+                  to={`/my/teams/${team.id}/edit`}
+                  className="shrink-0 rounded-lg border border-brand-200 px-3 py-2 text-xs font-semibold text-brand-600 hover:bg-brand-50"
+                >
+                  팀 정보 수정
+                </Link>
+              )}
+            </div>
+          </section>
+
+          {/* Tabs */}
+          <div className="mt-6 flex gap-1 border-b border-brand-100">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-3 text-sm font-semibold transition ${
+                  activeTab === tab.key
+                    ? 'border-b-2 border-brand-900 text-brand-900'
+                    : 'text-brand-400 hover:text-brand-600'
                 }`}
               >
-                {team.recruiting ? '모집중' : '모집완료'}
-              </span>
-            </div>
-
-            {team.promotionText && (
-              <p className="mt-5 text-base leading-7 text-brand-600">
-                {team.promotionText}
-              </p>
-            )}
-          </section>
-
-          {/* Recruitment summary */}
-          <section className="mt-8 rounded-2xl border border-brand-100 bg-brand-50/40 p-5">
-            <div className="grid grid-cols-2 gap-y-5 sm:grid-cols-4">
-
-              <InfoItem
-                label="현재 인원"
-                value={`${team.currentMemberCount}명`}
-              />
-
-              <InfoItem
-                label="모집 인원"
-                value={`${team.capacity}명`}
-              />
-
-              <InfoItem
-                label="모집 시작"
-                value={team.recruitmentStartDate.replaceAll('-', '.')}
-              />
-
-              <InfoItem
-                label="모집 마감"
-                value={team.recruitmentEndDate.replaceAll('-', '.')}
-              />
-
-            </div>
-          </section>
-
-          {/* Roles */}
-          <section className="mt-8">
-            <SectionTitle
-              title="모집 역할"
-              description="팀에서 함께 활동할 역할이에요."
-            />
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {team.role.map((role) => (
-                <span
-                  key={role}
-                  className="rounded-lg bg-brand-50 px-3 py-2 text-sm font-medium text-brand-700"
-                >
-                  {role}
-                </span>
-              ))}
-            </div>
-          </section>
-
-          {/* Team introduction */}
-          <section className="mt-10">
-            <SectionTitle
-              title="팀 소개"
-              description="팀 모집에 작성한 내용을 확인할 수 있어요."
-            />
-
-            <div className="mt-4 rounded-2xl border border-brand-100 p-5">
-              <p className="whitespace-pre-wrap text-sm leading-7 text-brand-700">
-                {team.promotionText || '작성된 팀 소개가 없어요.'}
-              </p>
-            </div>
-          </section>
-
-          {/* Members */}
-          <section className="mt-10">
-            <SectionTitle
-              title="팀원"
-              description={`${team.currentMemberCount}/${team.capacity}명 참여 중`}
-            />
-
-            <div className="mt-4 divide-y divide-brand-100 rounded-2xl border border-brand-100">
-
-              {/* 임시 팀장 */}
-              <div className="flex items-center gap-3 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-600">
-                  나
-                </div>
-
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-brand-900">
-                    팀장
-                  </p>
-
-                  <p className="mt-0.5 text-xs text-brand-400">
-                    팀 생성자
-                  </p>
-                </div>
-
-                <span className="ml-auto rounded-md bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-500">
-                  팀장
-                </span>
-              </div>
-
-              {/* 실제 팀원 데이터가 생기면 map */}
-              {Array.from({
-                length: Math.max(team.currentMemberCount - 1, 0),
-              }).map((_, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-4"
-                >
-                  <div className="h-10 w-10 rounded-full bg-brand-50" />
-
-                  <div>
-                    <p className="text-sm font-medium text-brand-800">
-                      팀원 {index + 1}
-                    </p>
-
-                    <p className="mt-0.5 text-xs text-brand-400">
-                      참여 멤버
-                    </p>
-                  </div>
-                </div>
-              ))}
-
-            </div>
-          </section>
-
-          {/* Bottom actions */}
-          <section className="mt-10 flex gap-3 border-t border-brand-100 pt-6">
-
-            <Link
-              to="/my/teams"
-              className="flex-1 rounded-xl border border-brand-200 py-3 text-center text-sm font-semibold text-brand-600 transition hover:bg-brand-50"
-            >
-              목록으로
-            </Link>
-
-            {team.recruiting && (
-              <button
-                className="flex-1 rounded-xl bg-brand-900 py-3 text-sm font-semibold text-white transition hover:bg-brand-800"
-              >
-                모집 관리
+                {tab.label}
               </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div className="mt-6">
+            {activeTab === 'info' ? (
+              <TeamInfoTab team={team} />
+            ) : (
+              <ComingSoon label={TABS.find((t) => t.key === activeTab)!.label} />
             )}
-
-          </section>
-
+          </div>
         </main>
 
         <Footer />
@@ -281,50 +166,121 @@ export default function TeamDetail() {
   )
 }
 
-
 /* -----------------------------
-   작은 UI 컴포넌트
+   팀 정보 탭
 ----------------------------- */
 
-function InfoItem({
-  label,
-  value,
-}: {
-  label: string
-  value: string
-}) {
+function TeamInfoTab({ team }: { team: TeamDetailType }) {
   return (
-    <div>
-      <p className="text-xs text-brand-400">
-        {label}
-      </p>
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      {/* 팀 기본 정보 */}
+      <section className="rounded-2xl border border-brand-100 p-5">
+        <h2 className="text-base font-bold text-brand-900">팀 기본 정보</h2>
 
-      <p className="mt-1 text-sm font-bold text-brand-800">
-        {value}
-      </p>
+        <dl className="mt-4 space-y-3 text-sm">
+          <InfoRow label="팀 이름" value={team.title} />
+          {team.connectedActivityTitle && (
+            <InfoRow label="공모전" value={team.connectedActivityTitle} />
+          )}
+          <InfoRow label="팀 소개" value={team.promotionText || '작성된 소개가 없어요.'} />
+          <InfoRow
+            label="모집 기간"
+            value={`${team.recruitmentStartDate.replaceAll('-', '.')} ~ ${team.recruitmentEndDate.replaceAll('-', '.')}`}
+          />
+          <InfoRow label="현재 인원" value={`${team.currentMemberCount} / ${team.capacity}명`} />
+        </dl>
+
+        {team.role.length > 0 && (
+          <div className="mt-4 border-t border-brand-100 pt-4">
+            <p className="text-xs text-brand-400">모집 포지션</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {team.role.map((r) => (
+                <span
+                  key={r}
+                  className="rounded-md bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-600"
+                >
+                  {r}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {team.requiredSkills.length > 0 && (
+          <div className="mt-4 border-t border-brand-100 pt-4">
+            <p className="text-xs text-brand-400">요구 스킬</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {team.requiredSkills.map((s) => (
+                <span
+                  key={s}
+                  className="rounded-md bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-600"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 팀 멤버 */}
+      <section className="rounded-2xl border border-brand-100 p-5">
+        <h2 className="text-base font-bold text-brand-900">
+          팀 멤버 <span className="font-normal text-brand-400">({team.members.length}명)</span>
+        </h2>
+
+        <div className="mt-4 divide-y divide-brand-100">
+          {team.members.map((member) => (
+            <div key={member.userId} className="flex items-center gap-3 py-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-600">
+                {member.name.slice(0, 1)}
+              </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate text-sm font-semibold text-brand-900">
+                    {member.name}
+                  </p>
+                  {member.isLeader && <span title="팀장">👑</span>}
+                </div>
+                <p className="mt-0.5 text-xs text-brand-400">{member.major}</p>
+              </div>
+
+              {member.isLeader && (
+                <span className="ml-auto shrink-0 rounded-md bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-500">
+                  팀장
+                </span>
+              )}
+            </div>
+          ))}
+
+          {team.members.length === 0 && (
+            <p className="py-6 text-center text-sm text-brand-400">아직 팀원이 없어요.</p>
+          )}
+        </div>
+      </section>
     </div>
   )
 }
 
-
-function SectionTitle({
-  title,
-  description,
-}: {
-  title: string
-  description?: string
-}) {
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <h2 className="text-lg font-bold text-brand-900">
-        {title}
-      </h2>
+    <div className="flex items-start justify-between gap-4">
+      <dt className="shrink-0 text-brand-400">{label}</dt>
+      <dd className="text-right font-medium text-brand-800">{value}</dd>
+    </div>
+  )
+}
 
-      {description && (
-        <p className="mt-1 text-xs text-brand-400">
-          {description}
-        </p>
-      )}
+/* -----------------------------
+   준비중 탭 placeholder
+----------------------------- */
+
+function ComingSoon({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-brand-100 py-24 text-center">
+      <p className="text-sm font-semibold text-brand-500">{label} 기능은 준비 중이에요</p>
+      <p className="mt-1 text-xs text-brand-300">곧 만나볼 수 있어요.</p>
     </div>
   )
 }

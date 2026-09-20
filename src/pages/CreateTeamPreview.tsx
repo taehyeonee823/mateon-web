@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useCreateTeamStore } from '../context/CreateTeam'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRightIcon } from '../components/icons'
-import { createTeamRecruitment, type TeamRequestPayload } from '../api/team'
+import { createTeamRecruitment} from '../api/team'
+import { TeamRequestPayload } from '../types/team'
 
 const steps = ['팀 기본 정보', '모집 포지션', '미리보기']
 

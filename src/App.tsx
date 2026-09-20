@@ -20,6 +20,7 @@ import CreateTeamInfo from './pages/CreateTeamInfo'
 import CreateTeamPosition from './pages/CreateTeamPosition'
 import CreateTeamPreview from './pages/CreateTeamPreview'
 import DreamyWidget from './components/DreamyWidget'
+import TeamDetail from './pages/TeamDetail'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
       <Route path="/my" element={<MyPage />} />
       <Route path="/my/applications" element={<MyApplications />} />
       <Route path="/my/teams" element={<MyTeams />} />
+      <Route path="/my/teams/:id" element={<TeamDetail />} />
       <Route path="/my/bookmarks" element={<MyBookmarks />} />
       <Route path="/my/review" element={<TeamReview />} />
       <Route path="/pwchange" element={<PasswordChange />} />
