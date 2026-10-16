@@ -5,7 +5,7 @@ export type TeamMember = {
   isLeader: boolean;
 }
 
-export type ApplicationStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+export type ApplicationStatus = "PENDING" | "ACCEPTED" | "APPROVED" | "REJECTED";
 
 export type TeamDetail = {
   id: number;

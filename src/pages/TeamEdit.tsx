@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import {
+  deleteTeam,
   getTeamDetail,
   updateTeamRecruitment,
   ForbiddenAccessError,
@@ -175,6 +176,7 @@ export default function MyTeamEdit() {
   const [form, setForm] = useState<FormState | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -234,7 +236,7 @@ export default function MyTeamEdit() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!form || !team || submitting) return
+    if (!form || !team || submitting || deleting) return
 
     const message = validate(form, team)
     if (message) {
@@ -254,6 +256,25 @@ export default function MyTeamEdit() {
       else setError(e instanceof Error ? e.message : '수정 중 오류가 발생했어요.')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (submitting || deleting) return
+    if (!window.confirm('팀 모집글을 삭제하시겠어요? 삭제한 모집글은 복구할 수 없어요.')) return
+
+    setDeleting(true)
+    setError(null)
+
+    try {
+      await deleteTeam(id)
+      navigate('/my/teams', { replace: true })
+    } catch (e) {
+      if (e instanceof ForbiddenAccessError) setError('삭제 권한이 없어요.')
+      else if (e instanceof ResourceNotFoundError) setError('존재하지 않거나 이미 삭제된 팀이에요.')
+      else setError(e instanceof Error ? e.message : '삭제 중 오류가 발생했어요.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -403,20 +424,32 @@ export default function MyTeamEdit() {
             </p>
           )}
 
-          <div className="flex justify-end gap-2">
-            <Link
-              to={`/my/teams/${id}`}
-              className="rounded-lg border border-brand-200 px-4 py-2.5 text-sm font-semibold text-brand-600 hover:bg-brand-50"
-            >
-              취소
-            </Link>
+          <div className="flex items-center justify-between gap-2">
             <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-brand-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              onClick={handleDelete}
+              disabled={submitting || deleting}
+              className="rounded-lg border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? '저장 중...' : '저장하기'}
+              {deleting ? '삭제 중...' : '삭제하기'}
             </button>
+            <div className="flex gap-2">
+              <Link
+                to={`/my/teams/${id}`}
+                aria-disabled={deleting}
+                tabIndex={deleting ? -1 : undefined}
+                className="rounded-lg border border-brand-200 px-4 py-2.5 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+              >
+                취소
+              </Link>
+              <button
+                type="submit"
+                disabled={submitting || deleting}
+                className="rounded-lg bg-brand-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? '저장 중...' : '저장하기'}
+              </button>
+            </div>
           </div>
         </form>
       </main>

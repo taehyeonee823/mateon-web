@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
-import { getTeamDetail } from '../api/team'
-import type { TeamDetail as TeamDetailType } from '../types/team'
+import { getTeamApplications, getTeamDetail, respondToApplication } from '../api/team'
+import type { Application, TeamDetail as TeamDetailType } from '../types/team'
 import Teammates, { OfferManagement } from '../components/Teammates'
 
 const TABS = [
@@ -156,12 +156,21 @@ export default function TeamDetail() {
           <div className="mt-6">
             {activeTab === 'info' ? (
               <TeamInfoTab team={team} />
+            ) : activeTab === 'members' ? (
+              <ReceivedApplicationsTab
+                teamId={team.id}
+                isLeader={team.leader}
+                onTeamRefresh={async () => {
+                  const updatedTeam = await getTeamDetail(team.id)
+                  setTeam(updatedTeam)
+                }}
+              />
             ) : activeTab === 'roles' ? (
               <Teammates teamId={team.id} isLeader={team.leader} />
             ) : activeTab === 'offer' ? (
               <OfferManagement teamId={team.id} isLeader={team.leader} />
             ) : (
-              <ComingSoon label={TABS.find((t) => t.key === activeTab)!.label} />
+              <TeamInfoTab team={team} />
             )}
           </div>
         </main>
@@ -278,15 +287,206 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-/* -----------------------------
-   준비중 탭 placeholder
------------------------------ */
+const APPLICATION_STATUS: Record<Application['status'], { label: string; className: string }> = {
+  PENDING: { label: '검토 대기', className: 'bg-amber-50 text-amber-700' },
+  ACCEPTED: { label: '승인됨', className: 'bg-emerald-50 text-emerald-700' },
+  APPROVED: { label: '승인됨', className: 'bg-emerald-50 text-emerald-700' },
+  REJECTED: { label: '거절됨', className: 'bg-rose-50 text-rose-600' },
+}
 
-function ComingSoon({ label }: { label: string }) {
+function ReceivedApplicationsTab({
+  teamId,
+  isLeader,
+  onTeamRefresh,
+}: {
+  teamId: number
+  isLeader: boolean
+  onTeamRefresh: () => Promise<void>
+}) {
+  const [applications, setApplications] = useState<Application[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [processingId, setProcessingId] = useState<number | null>(null)
+
+  useEffect(() => {
+    let isCurrent = true
+
+    if (!isLeader) {
+      setLoading(false)
+      return () => {
+        isCurrent = false
+      }
+    }
+
+    setLoading(true)
+    setError(null)
+    setApplications([])
+    getTeamApplications(teamId)
+      .then((data) => {
+        if (isCurrent) {
+          setApplications([...data].sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
+        }
+      })
+      .catch((err: unknown) => {
+        if (isCurrent) {
+          setError(err instanceof Error ? err.message : '지원서 목록을 불러오지 못했어요.')
+        }
+      })
+      .finally(() => {
+        if (isCurrent) setLoading(false)
+      })
+
+    return () => {
+      isCurrent = false
+    }
+  }, [teamId, isLeader])
+
+  async function handleRespond(applicationId: number, isApproved: boolean) {
+    setProcessingId(applicationId)
+    setError(null)
+    try {
+      await respondToApplication(applicationId, isApproved)
+      setApplications((current) =>
+        current.map((application) =>
+          application.applicationId === applicationId
+            ? { ...application, status: isApproved ? 'APPROVED' : 'REJECTED' }
+            : application,
+        ),
+      )
+      if (isApproved) {
+        try {
+          await onTeamRefresh()
+        } catch (err) {
+          setError(
+            `지원서는 승인됐지만 팀 정보를 새로고침하지 못했어요: ${
+              err instanceof Error ? err.message : '다시 시도해 주세요.'
+            }`,
+          )
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '지원서 처리에 실패했어요.')
+    } finally {
+      setProcessingId(null)
+    }
+  }
+
+  if (!isLeader) {
+    return (
+      <p className="rounded-2xl border border-brand-100 py-16 text-center text-sm text-brand-400">
+        팀장만 지원서를 확인할 수 있어요.
+      </p>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="h-36 animate-pulse rounded-2xl bg-brand-50" />
+        ))}
+      </div>
+    )
+  }
+
+  if (error && applications.length === 0) {
+    return <p className="py-16 text-center text-sm text-rose-500">{error}</p>
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-brand-100 py-24 text-center">
-      <p className="text-sm font-semibold text-brand-500">{label} 기능은 준비 중이에요</p>
-      <p className="mt-1 text-xs text-brand-300">곧 만나볼 수 있어요.</p>
+    <div className="flex flex-col gap-3">
+      {error && <p role="alert" className="text-sm text-rose-500">{error}</p>}
+      {applications.length > 0 ? (
+        applications.map((application) => {
+          const status = APPLICATION_STATUS[application.status]
+          const portfolioUrl = getSafeExternalUrl(application.portfolioUrl)
+
+          return (
+            <article
+              key={application.applicationId}
+              className="rounded-2xl border border-brand-100 p-5"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-bold text-brand-900">{application.applicant.name}</h2>
+                  <p className="mt-1 text-xs text-brand-400">
+                    {[application.applicant.college, application.applicant.major, application.applicant.grade]
+                      .filter(Boolean)
+                      .join(' · ') || '프로필 정보 없음'}
+                  </p>
+                </div>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status.className}`}>
+                  {status.label}
+                </span>
+              </div>
+
+              {application.introduction && (
+                <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-brand-700">
+                  {application.introduction}
+                </p>
+              )}
+              {application.message && (
+                <p className="mt-3 whitespace-pre-wrap rounded-xl bg-brand-50 p-3 text-sm leading-6 text-brand-600">
+                  {application.message}
+                </p>
+              )}
+
+              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-brand-500">
+                {application.contactNumber && <span>연락처: {application.contactNumber}</span>}
+                {portfolioUrl ? (
+                  <a
+                    href={portfolioUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold text-brand-600 underline"
+                  >
+                    포트폴리오 보기
+                  </a>
+                ) : application.portfolioUrl ? (
+                  <span>포트폴리오: {application.portfolioUrl}</span>
+                ) : null}
+                <span>{application.createdAt.slice(0, 10).replaceAll('-', '.')} 지원</span>
+              </div>
+
+              {application.status === 'PENDING' && (
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    disabled={processingId !== null}
+                    onClick={() => handleRespond(application.applicationId, false)}
+                    className="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:cursor-wait disabled:opacity-50"
+                  >
+                    {processingId === application.applicationId ? '처리 중…' : '거절'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={processingId !== null}
+                    onClick={() => handleRespond(application.applicationId, true)}
+                    className="rounded-full bg-brand-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-wait disabled:opacity-50"
+                  >
+                    {processingId === application.applicationId ? '처리 중…' : '승인'}
+                  </button>
+                </div>
+              )}
+            </article>
+          )
+        })
+      ) : (
+        <p className="rounded-2xl border border-dashed border-brand-100 py-16 text-center text-sm text-brand-400">
+          아직 도착한 지원서가 없어요.
+        </p>
+      )}
     </div>
   )
+}
+
+function getSafeExternalUrl(value: string): string | null {
+  if (!value) return null
+
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null
+  } catch {
+    return null
+  }
 }
