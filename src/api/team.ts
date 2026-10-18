@@ -13,6 +13,14 @@ import { Application } from "../types/team";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+export type TeamApplicationRequest = {
+  introduction?: string;
+  message: string;
+  contactNumber: string;
+  portfolioUrl?: string;
+};
+
+
 async function authenticatedFetch<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -269,3 +277,52 @@ export async function respondToApplication(applicationId: number, isApproved: bo
   return result.message;
 }
 
+// 8. 팀 모집글 목록 조회 (로그인 불필요, 필터는 myPosts > eventId > category 순으로 하나만 적용)
+export async function getTeams(
+  params: { myPosts?: boolean; eventId?: number; category?: string } = {},
+  signal?: AbortSignal
+): Promise<TeamPost[]> {
+  const query = new URLSearchParams();
+  if (params.myPosts) query.set('myPosts', 'true');
+  else if (params.eventId != null) query.set('eventId', String(params.eventId));
+  else if (params.category) query.set('category', params.category);
+
+  // 비로그인도 조회 가능하므로 토큰이 있을 때만 헤더에 붙임
+  const accessToken = await getAccessToken();
+  const qs = query.toString();
+
+  const response = await fetch(`${API_BASE_URL}/api/teams${qs ? `?${qs}` : ''}`, {
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    signal,
+  });
+
+  const text = await response.text();
+  let result: ApiResponse<TeamPost[]> | null = null;
+  if (text) {
+    try {
+      result = JSON.parse(text);
+    } catch {
+      throw new Error(`서버 응답 오류가 발생했습니다. (${response.status})`);
+    }
+  }
+
+  if (!response.ok || !result?.success) {
+    throw new Error(result?.message || `팀 목록 조회 실패: ${response.status}`);
+  }
+  return result.data;
+}
+
+// 2. 지원서 제출
+export async function submitTeamApplication(
+  teamId: number,
+  body: TeamApplicationRequest
+) {
+  const result = await authenticatedFetch<{ applicationId: number }>(
+    `/api/teams/${teamId}/apply`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }
+  );
+  return result.data;
+}

@@ -1,9 +1,16 @@
-import { Link, useParams } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
-import { getTeamApplications, getTeamDetail, respondToApplication } from '../api/team'
+import { draftProposalForTeam } from '../api/proposal'
+import {
+  getTeamApplications,
+  getTeamDetail,
+  respondToApplication,
+  submitTeamApplication,
+  type TeamApplicationRequest,
+} from '../api/team'
 import type { Application, TeamDetail as TeamDetailType } from '../types/team'
 import Teammates, { OfferManagement } from '../components/Teammates'
 
@@ -18,11 +25,16 @@ type TabKey = (typeof TABS)[number]['key']
 
 export default function TeamDetail() {
   const { id } = useParams<{ id: string }>()
+  const location = useLocation()
+  const fromTeamRecommendations =
+    (location.state as { fromTeamRecommendations?: boolean } | null)?.fromTeamRecommendations === true
 
   const [team, setTeam] = useState<TeamDetailType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>('info')
+  const [isApplicationModalOpen, setIsApplicationModalOpen] = useState(false)
+  const visibleTabs = team?.leader ? TABS : TABS.filter((tab) => tab.key === 'info')
 
   useEffect(() => {
     if (!id) return
@@ -124,20 +136,35 @@ export default function TeamDetail() {
                 )}
               </div>
 
-              {team.leader && (
+              {team.leader ? (
                 <Link
                   to={`/my/teams/${team.id}/edit`}
                   className="shrink-0 rounded-lg border border-brand-200 px-3 py-2 text-xs font-semibold text-brand-600 hover:bg-brand-50"
                 >
                   팀 정보 수정
                 </Link>
-              )}
+              ) : team.recruiting ? (
+                <button
+                  type="button"
+                  disabled={team.hasApplied}
+                  onClick={() => setIsApplicationModalOpen(true)}
+                  className="shrink-0 rounded-lg bg-brand-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {team.hasApplied
+                    ? team.myApplicationStatus === 'APPROVED'
+                      ? '합류 완료'
+                      : team.myApplicationStatus === 'REJECTED'
+                        ? '지원 거절됨'
+                        : '지원 완료'
+                    : '지원하기'}
+                </button>
+              ) : null}
             </div>
           </section>
 
           {/* Tabs */}
           <div className="mt-6 flex gap-1 border-b border-brand-100">
-            {TABS.map((tab) => (
+            {visibleTabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
@@ -154,7 +181,7 @@ export default function TeamDetail() {
 
           {/* Tab content */}
           <div className="mt-6">
-            {activeTab === 'info' ? (
+            {!team.leader || activeTab === 'info' ? (
               <TeamInfoTab team={team} />
             ) : activeTab === 'members' ? (
               <ReceivedApplicationsTab
@@ -177,6 +204,232 @@ export default function TeamDetail() {
 
         <Footer />
       </div>
+      {isApplicationModalOpen && (
+        <TeamApplicationModal
+          team={team}
+          generateAiDraft={fromTeamRecommendations}
+          onClose={() => setIsApplicationModalOpen(false)}
+          onSubmitted={() => {
+            setTeam((current) =>
+              current
+                ? { ...current, hasApplied: true, myApplicationStatus: 'PENDING' }
+                : current,
+            )
+            setIsApplicationModalOpen(false)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function TeamApplicationModal({
+  team,
+  generateAiDraft: shouldGenerateAiDraft,
+  onClose,
+  onSubmitted,
+}: {
+  team: TeamDetailType
+  generateAiDraft: boolean
+  onClose: () => void
+  onSubmitted: () => void
+}) {
+  const [introduction, setIntroduction] = useState('')
+  const [message, setMessage] = useState('')
+  const [draftLoading, setDraftLoading] = useState(false)
+  const [draftError, setDraftError] = useState<string | null>(null)
+  const [contactNumber, setContactNumber] = useState('')
+  const [portfolioUrl, setPortfolioUrl] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const draftRequestSeq = useRef(0)
+
+  const loadDraft = useCallback(async () => {
+    const requestSeq = ++draftRequestSeq.current
+    setDraftLoading(true)
+    setDraftError(null)
+    try {
+      const draft = await draftProposalForTeam({ teamId: team.id })
+      if (requestSeq !== draftRequestSeq.current) return
+      setIntroduction(draft.summary)
+      setMessage(draft.message)
+    } catch (err) {
+      if (requestSeq !== draftRequestSeq.current) return
+      setDraftError(err instanceof Error ? err.message : '지원 문구 초안을 불러오지 못했어요.')
+    } finally {
+      if (requestSeq === draftRequestSeq.current) setDraftLoading(false)
+    }
+  }, [team.id])
+
+  useEffect(() => {
+    if (!shouldGenerateAiDraft) return
+    void loadDraft()
+    return () => {
+      draftRequestSeq.current++
+    }
+  }, [loadDraft, shouldGenerateAiDraft])
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (submitting) return
+
+    const payload: TeamApplicationRequest = {
+      introduction: introduction.trim(),
+      message: message.trim(),
+      contactNumber: contactNumber.trim(),
+      ...(portfolioUrl.trim() ? { portfolioUrl: portfolioUrl.trim() } : {}),
+    }
+
+    setSubmitting(true)
+    setError(null)
+    try {
+      await submitTeamApplication(team.id, payload)
+      onSubmitted()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '지원서 제출에 실패했어요.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="team-application-title"
+        className="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="team-application-title" className="text-lg font-bold text-brand-900">
+              {team.title} 지원하기
+            </h2>
+            <p className="mt-1 text-sm text-brand-400">팀장에게 전달할 지원서를 작성해주세요.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            aria-label="지원서 작성 닫기"
+            className="text-xl text-brand-400 hover:text-brand-700 disabled:opacity-50"
+          >
+            ×
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
+          <label className="text-sm font-semibold text-brand-700">
+            자기소개
+            {shouldGenerateAiDraft && draftLoading && (
+              <span className="mt-1 block text-xs font-normal text-brand-400">AI 초안을 불러오는 중이에요…</span>
+            )}
+            <textarea
+              required
+              value={introduction}
+              onChange={(event) => setIntroduction(event.target.value)}
+              disabled={submitting || (shouldGenerateAiDraft && draftLoading)}
+              rows={3}
+              className="mt-1.5 w-full resize-y rounded-xl border border-brand-100 px-3 py-2.5 text-sm font-normal leading-6 text-brand-900 outline-none focus:border-brand-300"
+              placeholder="관련 경험이나 나를 소개해주세요."
+            />
+          </label>
+
+          <label className="text-sm font-semibold text-brand-700">
+            지원 메시지
+            {shouldGenerateAiDraft && (
+              <>
+                <span className="mt-1.5 block rounded-xl bg-blue-50 p-3 text-xs font-normal leading-5 text-blue-600">
+                  추천 정보를 바탕으로 AI가 작성한 초안이에요. 내용을 확인하고 자유롭게 수정해주세요.
+                </span>
+                {draftLoading && (
+                  <div className="mt-2 space-y-2 rounded-xl border border-brand-100 p-3" aria-label="지원 문구 초안 생성 중">
+                    <div className="h-3 w-full animate-pulse rounded bg-brand-50" />
+                    <div className="h-3 w-full animate-pulse rounded bg-brand-50" />
+                    <div className="h-3 w-2/3 animate-pulse rounded bg-brand-50" />
+                  </div>
+                )}
+                {draftError && (
+                  <div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-rose-100 bg-rose-50 p-3">
+                    <p role="alert" className="text-xs leading-5 text-rose-600">
+                      AI 초안을 불러오지 못했어요. 직접 작성하거나 다시 시도할 수 있어요.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void loadDraft()}
+                      disabled={draftLoading || submitting}
+                      className="shrink-0 text-xs font-semibold text-brand-600 hover:underline disabled:opacity-50"
+                    >
+                      다시 시도
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void loadDraft()}
+                  disabled={draftLoading || submitting}
+                  className="mt-2 text-xs font-semibold text-brand-500 hover:text-brand-700 disabled:opacity-50"
+                >
+                  {draftLoading ? '초안 생성 중...' : 'AI 초안 다시 생성'}
+                </button>
+              </>
+            )}
+            <textarea
+              required
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              disabled={submitting || (shouldGenerateAiDraft && draftLoading)}
+              rows={4}
+              className="mt-1.5 w-full resize-y rounded-xl border border-brand-100 px-3 py-2.5 text-sm font-normal leading-6 text-brand-900 outline-none focus:border-brand-300"
+              placeholder="지원 동기와 팀에 전하고 싶은 말을 작성해주세요."
+            />
+          </label>
+
+          <label className="text-sm font-semibold text-brand-700">
+            연락처 <span className="font-normal text-brand-400">(선택)</span>
+            <input
+              type="tel"
+              value={contactNumber}
+              onChange={(event) => setContactNumber(event.target.value)}
+              disabled={submitting}
+              className="mt-1.5 h-11 w-full rounded-xl border border-brand-100 px-3 text-sm font-normal text-brand-900 outline-none focus:border-brand-300"
+              placeholder="연락 가능한 전화번호"
+            />
+          </label>
+
+          <label className="text-sm font-semibold text-brand-700">
+            포트폴리오 URL <span className="font-normal text-brand-400">(선택)</span>
+            <input
+              type="url"
+              value={portfolioUrl}
+              onChange={(event) => setPortfolioUrl(event.target.value)}
+              disabled={submitting}
+              className="mt-1.5 h-11 w-full rounded-xl border border-brand-100 px-3 text-sm font-normal text-brand-900 outline-none focus:border-brand-300"
+              placeholder="https://"
+            />
+          </label>
+
+          {error && <p role="alert" className="text-sm text-rose-500">{error}</p>}
+
+          <div className="mt-1 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="rounded-lg border border-brand-200 px-4 py-2.5 text-sm font-semibold text-brand-600 hover:bg-brand-50 disabled:opacity-50"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || (shouldGenerateAiDraft && draftLoading) || !message.trim()}
+              className="rounded-lg bg-brand-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-wait disabled:opacity-50"
+            >
+              {submitting ? '제출 중...' : '지원서 제출'}
+            </button>
+          </div>
+        </form>
+      </section>
     </div>
   )
 }

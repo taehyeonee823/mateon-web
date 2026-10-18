@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { BookmarkIcon, CalendarIcon, UsersIcon } from '../components/icons'
 import SimilarityMap from '../components/SimilarityMap'
+import { getTeams } from '../api/team'
+import type { TeamPost } from '../types/team'
+import { useAuth } from '../context/AuthContext'
 import {
   fetchEventDetail,
   bookmarkEvent,
@@ -62,6 +65,7 @@ export default function ContestDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
+  const { isLoggedIn } = useAuth()
   const onBack = () => navigate(-1)
 
   // 목록 카드를 눌러서 들어온 경우 이미 갖고 있는 데이터를 즉시 사용.
@@ -72,6 +76,9 @@ export default function ContestDetailPage() {
   const [loading, setLoading] = useState(!stateEvent)
   const [error, setError] = useState<string | null>(null)
   const [imageError, setImageError] = useState(false)
+  const [teams, setTeams] = useState<TeamPost[]>([])
+  const [teamsLoading, setTeamsLoading] = useState(false)
+  const [teamsError, setTeamsError] = useState<string | null>(null)
 
   useEffect(() => {
     if (stateEvent) return 
@@ -94,11 +101,40 @@ export default function ContestDetailPage() {
     return () => controller.abort()
   }, [id])
 
+  useEffect(() => {
+    if (!event) return
+
+    const controller = new AbortController()
+    setTeamsLoading(true)
+    setTeamsError(null)
+
+    getTeams({ eventId: event.id }, controller.signal)
+      .then(setTeams)
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setTeamsError(err instanceof Error ? err.message : '모집 중인 팀을 불러오지 못했어요.')
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setTeamsLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [event?.id])
+
   const d = useMemo(() => (event ? dDayInfo(event.endDate) : null), [event])
   const descriptionBlocks = useMemo(
     () => (event?.description ? parseDescription(event.description) : []),
     [event],
   )
+  const recruitingTeams = useMemo(() => {
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+    return teams
+      .filter((team) => team.eventId === event?.id && team.recruiting && team.recruitmentEndDate >= today)
+      .sort((a, b) => a.recruitmentEndDate.localeCompare(b.recruitmentEndDate))
+      .slice(0, 3)
+  }, [event?.id, teams])
 
   async function handleToggleBookmark() {
     if (!event) return
@@ -221,8 +257,8 @@ export default function ContestDetailPage() {
         </div>
 
         {/* Sticky info card (desktop) */}
-        <aside className="hidden lg:block">
-          <div className="sticky top-6 flex flex-col gap-4 rounded-2xl border border-[#ECECF5] bg-white p-5 shadow-sm shadow-black/[0.03]">
+        <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start">
+          <div className="hidden flex-col gap-4 rounded-2xl border border-[#ECECF5] bg-white p-5 shadow-sm shadow-black/[0.03] lg:flex">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EEF0FF] text-[#4D4DF1]">
                 <CalendarIcon className="h-4.5 w-4.5" />
@@ -255,6 +291,46 @@ export default function ContestDetailPage() {
               팀 만들러 가기
             </button>
           </div>
+
+          <section className="rounded-2xl border border-[#ECECF5] bg-white p-5 shadow-sm shadow-black/[0.03]">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-[15px] font-bold text-[#1B1B33]">이 공모전으로 모집 중인 팀</h2>
+              <span className="shrink-0 text-[11px] font-medium text-[#8C8DAE]">마감 임박 순</span>
+            </div>
+
+            {teamsLoading ? (
+              <p className="py-8 text-center text-sm text-[#8C8DAE]">팀 목록을 불러오는 중이에요…</p>
+            ) : teamsError ? (
+              <p className="py-8 text-center text-sm text-rose-500">{teamsError}</p>
+            ) : recruitingTeams.length > 0 ? (
+              <div className="mt-4 flex flex-col gap-3">
+                {recruitingTeams.map((team) => (
+                  <button
+                    key={team.id}
+                    type="button"
+                    onClick={() => navigate(isLoggedIn ? `/my/teams/${team.id}` : '/login')}
+                    className="rounded-xl border border-[#ECECF5] p-3 text-left transition-colors hover:border-[#4D4DF1]/40 hover:bg-[#F8F8FF]"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="min-w-0 truncate text-[13px] font-bold text-[#1B1B33]">{team.title}</p>
+                      <span className="shrink-0 rounded-full bg-[#FFF0ED] px-2 py-0.5 text-[10px] font-bold text-[#FF6B57]">
+                        {computeDDay(team.recruitmentEndDate)}
+                      </span>
+                    </div>
+                    {team.role.length > 0 && (
+                      <p className="mt-1.5 truncate text-[11px] text-[#6F7095]">{team.role.join(' · ')}</p>
+                    )}
+                    <p className="mt-1.5 text-[11px] text-[#8C8DAE]">
+                      {team.currentMemberCount}/{team.capacity}명 ·{' '}
+                      {team.recruitmentEndDate.replaceAll('-', '.')} 마감
+                    </p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-[#8C8DAE]">현재 모집 중인 팀이 없어요.</p>
+            )}
+          </section>
         </aside>
       </div>
 
