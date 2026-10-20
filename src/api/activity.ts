@@ -1,4 +1,4 @@
-import type { ApiResponse } from './auth'
+import type { ApiResponse } from '../types/api'
 import { getAccessToken } from './tokenStorage'
 import { getTeamDetail } from './team'
 

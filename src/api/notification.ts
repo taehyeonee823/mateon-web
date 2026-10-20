@@ -1,4 +1,4 @@
-import type { ApiResponse } from './auth'
+import type { ApiResponse } from '../types/api'
 import { getAccessToken } from './tokenStorage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL

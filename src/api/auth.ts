@@ -1,12 +1,7 @@
+import { ApiResponse } from '../types/api'
 import { saveTokens } from './tokenStorage'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-
-export type ApiResponse<T> = {
-  success: boolean
-  message: string
-  data: T
-}
 
 type AuthTokens = {
   accessToken: string
