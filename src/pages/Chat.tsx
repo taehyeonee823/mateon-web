@@ -226,79 +226,38 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-full bg-slate-50 text-slate-900">
-      {/* 채팅방 목록 — 창이 좁아질 때 가장 마지막에 여백을 줄인다 */}
-      <aside className="flex w-[380px] shrink-0 flex-col border-r border-slate-200 bg-white max-md:w-[300px] max-sm:w-[240px]">
-        <div className="px-6 pt-6 pb-4 max-md:px-4 max-md:pt-4 max-md:pb-3">
-          <h1 className="text-2xl font-bold max-sm:text-xl">채팅</h1>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {roomsLoading && (
-            <p className="px-6 py-8 text-center text-sm text-slate-400">불러오는 중…</p>
-          )}
-
-          {!roomsLoading && rooms.length === 0 && (
-            <p className="px-6 py-8 text-center text-sm text-slate-400">채팅방이 없어요.</p>
-          )}
-
-          {rooms.map((room) => (
-            <button
-              key={room.roomId}
-              onClick={() => setSelectedRoomId(room.roomId)}
-              className={`flex w-full items-start gap-3 border-b border-slate-100 px-6 py-4 text-left transition-colors max-md:gap-2 max-md:px-4 max-md:py-3 ${
-                room.roomId === selectedRoomId ? 'bg-indigo-50' : 'hover:bg-slate-50'
-              }`}
-            >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
-                {room.partnerId != null && partnerAvatars[room.partnerId] ? (
-                  <img
-                    src={partnerAvatars[room.partnerId]!}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <img src="/landing_img/myPage/user.svg" alt="" className="h-7 w-7 opacity-40" />
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex min-w-0 items-center gap-1.5">
-                    <span className="truncate font-semibold">{room.title}</span>
-                  </div>
-                  <span className="shrink-0 text-xs text-slate-400">
-                    {formatRoomTime(room.lastMessageAt)}
-                  </span>
-                </div>
-                <div className="mt-1 flex items-center justify-between gap-2">
-                  <p className="truncate text-sm text-slate-500">{room.lastMessage}</p>
-                  {room.unreadCount > 0 && (
-                    <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[11px] font-semibold text-white">
-                      {room.unreadCount}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      {/* 채팅 상세 */}
-      <section className="flex flex-1 flex-col">
-        {!selectedRoom ? (
-          <div className="flex flex-1 items-center justify-center text-slate-400">
-            채팅방을 선택해주세요
+    // 좌우 여백을 두고 채팅 영역을 카드로 감싼다 (화면이 좁아지면 여백을 줄임)
+    <div className="h-full px-20 pb-8 text-slate-900 max-xl:px-10 max-lg:px-6 max-sm:px-4 max-sm:pb-4">
+      <div className="mx-auto flex h-full max-w-7xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {/* 채팅방 목록 — 창이 좁아질 때 가장 마지막에 여백을 줄인다 */}
+        <aside className="flex w-[340px] shrink-0 flex-col border-r border-slate-200 bg-white max-md:w-[280px] max-sm:w-[220px]">
+          <div className="border-b border-slate-100 px-6 pt-6 pb-4 max-md:px-4 max-md:pt-4 max-md:pb-3">
+            <h1 className="text-xl font-bold max-sm:text-lg">채팅</h1>
           </div>
-        ) : (
-          <>
-            <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 max-xl:px-4 max-xl:py-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
-                  {selectedRoom.partnerId != null && partnerAvatars[selectedRoom.partnerId] ? (
+
+          <div className="flex-1 overflow-y-auto">
+            {roomsLoading && (
+              <p className="px-6 py-8 text-center text-sm text-slate-400">불러오는 중…</p>
+            )}
+
+            {!roomsLoading && rooms.length === 0 && (
+              <p className="px-6 py-8 text-center text-sm text-slate-400">채팅방이 없어요.</p>
+            )}
+
+            {rooms.map((room) => (
+              <button
+                key={room.roomId}
+                onClick={() => setSelectedRoomId(room.roomId)}
+                className={`flex w-full items-start gap-3 border-l-[3px] px-5 py-4 text-left transition-colors max-md:gap-2 max-md:px-4 max-md:py-3 ${
+                  room.roomId === selectedRoomId
+                    ? 'border-indigo-600 bg-indigo-50/70'
+                    : 'border-transparent hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
+                  {room.partnerId != null && partnerAvatars[room.partnerId] ? (
                     <img
-                      src={partnerAvatars[selectedRoom.partnerId]!}
+                      src={partnerAvatars[room.partnerId]!}
                       alt=""
                       className="h-full w-full object-cover"
                     />
@@ -306,103 +265,149 @@ export default function ChatPage() {
                     <img src="/landing_img/myPage/user.svg" alt="" className="h-7 w-7 opacity-40" />
                   )}
                 </div>
-                <div>
-                  <p className="font-semibold">{selectedRoom.title}</p>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate font-semibold">{room.title}</span>
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-400">
+                      {formatRoomTime(room.lastMessageAt)}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className="truncate text-sm text-slate-500">{room.lastMessage}</p>
+                    {room.unreadCount > 0 && (
+                      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[11px] font-semibold text-white">
+                        {room.unreadCount}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </button>
+            ))}
+          </div>
+        </aside>
 
-              <div className="flex items-center gap-3 max-xl:gap-2">
-                <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 max-xl:hidden">
-                  <span className="text-xs text-slate-400">가</span>
-                  <input
-                    type="range"
-                    min={9}
-                    max={22}
-                    step={1}
-                    value={chatFontSize}
-                    onChange={(e) => setChatFontSize(Number(e.target.value))}
-                    aria-label="채팅 글자 크기 조절"
-                    className="h-1 w-24 cursor-pointer accent-indigo-600"
-                  />
-                  <span className="text-base text-slate-400">가</span>
+        {/* 채팅 상세 */}
+        <section className="flex min-w-0 flex-1 flex-col bg-slate-50">
+          {!selectedRoom ? (
+            <div className="flex flex-1 items-center justify-center text-slate-400">
+              채팅방을 선택해주세요
+            </div>
+          ) : (
+            <>
+              <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 max-xl:px-4 max-xl:py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
+                    {selectedRoom.partnerId != null && partnerAvatars[selectedRoom.partnerId] ? (
+                      <img
+                        src={partnerAvatars[selectedRoom.partnerId]!}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <img src="/landing_img/myPage/user.svg" alt="" className="h-7 w-7 opacity-40" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{selectedRoom.title}</p>
+                  </div>
                 </div>
-                <button className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium hover:bg-slate-50">
-                  프로필 보기
-                </button>
-              </div>
-            </header>
 
-            <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-6 py-6 max-xl:px-4 max-xl:py-4">
-              {messagesLoading && (
-                <p className="text-center text-sm text-slate-400">메시지를 불러오는 중…</p>
-              )}
+                <div className="flex items-center gap-3 max-xl:gap-2">
+                  <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 max-xl:hidden">
+                    <span className="text-xs text-slate-400">가</span>
+                    <input
+                      type="range"
+                      min={9}
+                      max={22}
+                      step={1}
+                      value={chatFontSize}
+                      onChange={(e) => setChatFontSize(Number(e.target.value))}
+                      aria-label="채팅 글자 크기 조절"
+                      className="h-1 w-24 cursor-pointer accent-indigo-600"
+                    />
+                    <span className="text-base text-slate-400">가</span>
+                  </div>
+                  <button className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium hover:bg-slate-50">
+                    프로필 보기
+                  </button>
+                </div>
+              </header>
 
-              {messages.map((msg, idx) => {
-                const senderIsMe = msg.senderId === currentUserId;
-                const prevMsg = messages[idx - 1];
-                const showDateSeparator = !prevMsg || !isSameDay(prevMsg.createdAt, msg.createdAt);
-                return (
-                  <div key={msg.messageId}>
-                    {showDateSeparator && <ChatDateSeparator date={msg.createdAt} />}
-                    <div className={`flex ${senderIsMe ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[70%] ${senderIsMe ? 'items-end' : 'items-start'}`}>
-                        {!senderIsMe && (
-                          <p className="mb-1 text-xs font-medium text-slate-500">{msg.senderName}</p>
-                        )}
-                        <div
-                          style={{ fontSize: chatFontSize }}
-                          className={`whitespace-pre-wrap rounded-2xl px-3 py-2 leading-relaxed ${
-                            senderIsMe
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-white text-slate-800 shadow-sm ring-1 ring-slate-100'
-                          }`}
-                        >
-                          {msg.content}
+              <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-6 py-6 max-xl:px-4 max-xl:py-4">
+                {messagesLoading && (
+                  <p className="text-center text-sm text-slate-400">메시지를 불러오는 중…</p>
+                )}
+
+                {messages.map((msg, idx) => {
+                  const senderIsMe = msg.senderId === currentUserId;
+                  const prevMsg = messages[idx - 1];
+                  const showDateSeparator = !prevMsg || !isSameDay(prevMsg.createdAt, msg.createdAt);
+                  return (
+                    <div key={msg.messageId}>
+                      {showDateSeparator && <ChatDateSeparator date={msg.createdAt} />}
+                      <div className={`flex ${senderIsMe ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[70%] ${senderIsMe ? 'items-end' : 'items-start'}`}>
+                          {!senderIsMe && (
+                            <p className="mb-1 text-xs font-medium text-slate-500">{msg.senderName}</p>
+                          )}
+                          <div
+                            style={{ fontSize: chatFontSize }}
+                            className={`whitespace-pre-wrap rounded-2xl px-3 py-2 leading-relaxed ${
+                              senderIsMe
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-white text-slate-800 shadow-sm ring-1 ring-slate-100'
+                            }`}
+                          >
+                            {msg.content}
+                          </div>
+                          <p
+                            className={`mt-1 text-[11px] text-slate-400 ${
+                              senderIsMe ? 'text-right' : 'text-left'
+                            }`}
+                          >
+                            {formatMessageTime(msg.createdAt)}
+                          </p>
                         </div>
-                        <p
-                          className={`mt-1 text-[11px] text-slate-400 ${
-                            senderIsMe ? 'text-right' : 'text-left'
-                          }`}
-                        >
-                          {formatMessageTime(msg.createdAt)}
-                        </p>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <footer className="border-t border-slate-200 bg-white px-6 py-4 max-lg:px-3 max-lg:py-3">
-              <div className="flex items-end gap-3 max-lg:gap-2">
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onCompositionStart={() => setIsComposing(true)}
-                  onCompositionEnd={() => setIsComposing(false)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey && !isComposing && !e.nativeEvent.isComposing) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder="메시지를 입력하세요..."
-                  rows={1}
-                  className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-400 max-lg:px-3 max-lg:py-2"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!draft.trim()}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white disabled:opacity-40 max-lg:h-9 max-lg:w-9"
-                  aria-label="메시지 보내기"
-                >
-                  ↑
-                </button>
+                  );
+                })}
               </div>
-            </footer>
-          </>
-        )}
-      </section>
+
+              <footer className="border-t border-slate-200 bg-white px-6 py-4 max-lg:px-3 max-lg:py-3">
+                <div className="flex items-end gap-3 max-lg:gap-2">
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onCompositionStart={() => setIsComposing(true)}
+                    onCompositionEnd={() => setIsComposing(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey && !isComposing && !e.nativeEvent.isComposing) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                    placeholder="메시지를 입력하세요..."
+                    rows={1}
+                    className="flex-1 resize-none rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-indigo-400 max-lg:px-3 max-lg:py-2"
+                  />
+                  <button
+                    onClick={handleSend}
+                    disabled={!draft.trim()}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white disabled:opacity-40 max-lg:h-9 max-lg:w-9"
+                    aria-label="메시지 보내기"
+                  >
+                    ↑
+                  </button>
+                </div>
+              </footer>
+            </>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

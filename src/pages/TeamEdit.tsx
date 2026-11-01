@@ -1,7 +1,6 @@
 // src/pages/MyTeamEdit.tsx
 import { FormEvent, KeyboardEvent, ReactNode, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import {
@@ -64,8 +63,7 @@ function toPayload(form: FormState, eventId: number | null): TeamRequestPayload 
 function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-white">
-      <Sidebar />
-      <div className="md:pl-64">
+      <div>
         <Topbar />
         {children}
         <Footer />

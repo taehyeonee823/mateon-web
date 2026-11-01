@@ -1,6 +1,5 @@
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import { draftProposalForTeam } from '../api/proposal'
@@ -53,8 +52,7 @@ export default function TeamDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Sidebar />
-        <div className="md:pl-64">
+        <div>
           <Topbar />
           <main className="mx-auto max-w-4xl px-6 py-12">
             <div className="h-5 w-24 animate-pulse rounded bg-brand-50" />
@@ -69,8 +67,7 @@ export default function TeamDetail() {
   if (!team || error) {
     return (
       <div className="min-h-screen bg-white">
-        <Sidebar />
-        <div className="md:pl-64">
+        <div>
           <Topbar />
           <main className="mx-auto max-w-4xl px-6 py-20 text-center">
             <p className="text-sm text-brand-400">
@@ -90,9 +87,7 @@ export default function TeamDetail() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Sidebar />
-
-      <div className="md:pl-64">
+      <div>
         <Topbar />
 
         <main className="mx-auto max-w-4xl px-6 py-10">

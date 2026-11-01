@@ -62,7 +62,7 @@ export default function CTA() {
   }, [])
 
   return (
-    <section id="cta" className="relative px-6 pb-36 bg-[#F1F6FE]">
+    <section id="cta" className="relative px-6 pb-4 bg-[#F1F6FE]">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-10 overflow-hidden rounded-[2.5rem] px-8 py-24 text-left sm:px-16 lg:flex-row lg:justify-between">
         <div>
           <h2

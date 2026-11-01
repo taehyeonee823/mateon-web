@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
@@ -31,8 +30,7 @@ export default function MyTeams() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Sidebar />
-      <div className="md:pl-64">
+      <div>
         <Topbar />
 
         <main className="mx-auto max-w-3xl px-6 py-12">

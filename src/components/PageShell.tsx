@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import Footer from './Footer'
 
@@ -16,9 +15,8 @@ export default function PageShell({
   // flex-grow + height:100% 체인이 종종 안 먹는 문제를 피한다.
   return (
     <div className={`bg-white ${hideFooter ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
-      <Sidebar />
       <div
-        className={`flex flex-col md:pl-64 ${hideFooter ? 'h-screen overflow-hidden' : 'min-h-screen'}`}
+        className={`flex flex-col ${hideFooter ? 'h-screen overflow-hidden' : 'min-h-screen'}`}
       >
         <Topbar />
         <main className="min-h-0 flex-1">{children}</main>

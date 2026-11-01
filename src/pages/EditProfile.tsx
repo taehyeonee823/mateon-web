@@ -1,6 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
@@ -145,8 +144,7 @@ export default function EditProfile() {
   if (!isLoggedIn || !profile) {
     return (
       <div className="min-h-screen bg-white">
-        <Sidebar />
-        <div className="md:pl-64">
+        <div>
           <Topbar />
           <main className="flex min-h-[60vh] items-center justify-center text-brand-500">
             로그인이 필요해요.
@@ -159,8 +157,7 @@ export default function EditProfile() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Sidebar />
-      <div className="md:pl-64">
+      <div>
         <Topbar />
 
         <main className="mx-auto max-w-xl px-6 py-12">

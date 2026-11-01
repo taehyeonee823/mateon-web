@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import { requestEmailCode, verifyEmailCode, signUp } from '../api/auth'
@@ -163,8 +162,7 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Sidebar />
-      <div className="md:pl-64">
+      <div>
         <Topbar />
 
         <main className="flex min-h-[70vh] flex-col items-center justify-center px-6 py-16">

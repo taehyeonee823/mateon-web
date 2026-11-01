@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import Thermometer from '../components/Thermometer'
@@ -100,8 +99,7 @@ export default function MyPage() {
   if (!isLoggedIn || !profile) {
     return (
       <div className="min-h-screen bg-white">
-        <Sidebar />
-        <div className="md:pl-64">
+        <div>
           <Topbar />
           <main className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
             <p className="text-lg font-semibold text-brand-900">로그인이 필요해요.</p>
@@ -120,8 +118,7 @@ export default function MyPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Sidebar />
-      <div className="md:pl-64">
+      <div>
         <Topbar />
 
         <main className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-4 lg:flex-row lg:items-start">
