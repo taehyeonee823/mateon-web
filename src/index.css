@@ -99,3 +99,75 @@ body {
     opacity: 0;
   }
 }
+
+/* 회원가입 코르크보드: 메모가 내려앉은 뒤 핀이 꽂히는 효과.
+   rotate 유틸리티(transform)를 덮어쓰지 않도록 개별 속성 scale/translate로 움직인다. */
+@keyframes stickIn {
+  0% {
+    opacity: 0;
+    scale: 1.2;
+    translate: 0 -24px;
+  }
+  65% {
+    opacity: 1;
+    scale: 0.98;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes pinIn {
+  0% {
+    opacity: 0;
+    scale: 2.2;
+    translate: 0 -30px;
+  }
+  60% {
+    opacity: 1;
+    scale: 0.75;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+/* 하단 폴라로이드: 튕김 없이 천천히 내려앉는다 */
+@keyframes stickInSoft {
+  from {
+    opacity: 0;
+    scale: 1.06;
+    translate: 0 -10px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+.stick-in-soft {
+  animation: stickInSoft 1.2s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+.stick-in {
+  animation: stickIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pin-in {
+  animation: pinIn 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stick-in,
+  .stick-in-soft,
+  .pin-in {
+    animation: none;
+  }
+}

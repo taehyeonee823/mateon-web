@@ -538,7 +538,7 @@ export default function Topbar() {
               to="/signup"
               className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
             >
-              무료로 회원가입하기
+              무료로 시작하기
             </Link>
           </>
         )}

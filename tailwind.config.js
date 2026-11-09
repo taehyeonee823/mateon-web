@@ -8,6 +8,7 @@ export default {
       sans: ['Pretendard Variable', 'Pretendard', ...defaultTheme.fontFamily.sans],
       pretendard: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
       'seoul-alrim': ['SeoulAlrim', 'Pretendard Variable', 'sans-serif'],
+      handwriting: ['Nanum Pen Script', 'cursive'],
     },
     extend: {
       colors: {

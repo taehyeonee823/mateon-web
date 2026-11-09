@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
+import SignupWelcome from '../components/SignupWelcome'
 import { requestEmailCode, verifyEmailCode, signUp } from '../api/auth'
 import { getUnivByEmail } from '../lib/univ'
 import { redirectToKakaoLogin } from '../lib/kakao'
@@ -18,7 +19,7 @@ const TRACKS = [
   '의약학계열',
 ]
 
-type Step = 'credentials' | 'info' | 'complete'
+type Step = 'welcome' | 'credentials' | 'info' | 'complete'
 
 const SIGNUP_STEPS: { key: Step; label: string }[] = [
   { key: 'credentials', label: '재학생 인증' },
@@ -29,7 +30,7 @@ const SIGNUP_STEPS: { key: Step; label: string }[] = [
 export default function Signup() {
   const navigate = useNavigate()
   const { refresh } = useAuth()
-  const [step, setStep] = useState<Step>('credentials')
+  const [step, setStep] = useState<Step>('welcome')
 
   // step 1: credentials
   const [email, setEmail] = useState('')
@@ -158,6 +159,12 @@ export default function Signup() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (step === 'welcome') {
+    return (
+      <SignupWelcome onKakao={handleKakaoLogin} onEmail={() => setStep('credentials')} error={kakaoError} />
+    )
   }
 
   return (
