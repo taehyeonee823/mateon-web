@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useSearchParams } from 'react-router-dom'
 import EventCard from '../components/EventCard'
 import Pagination from '../components/Pagination'
-import { ChevronDownIcon } from '../components/icons'
+import { ChevronDownIcon, ChevronRightIcon, SearchIcon } from '../components/icons'
 import { searchAllEvents, bookmarkEvent, unbookmarkEvent, EVENT_FIELD_LABELS, type EventItem } from '../api/event'
 import { dDayInfo, isWithinPeriod, type PeriodFilter, type PeriodPreset } from '../utils/dday'
 
@@ -19,7 +19,7 @@ const PRESET_LABEL: Record<PeriodPreset, string> = {
 const CATEGORIES = ['전체', ...Object.values(EVENT_FIELD_LABELS)] as const
 
 const INITIAL_VISIBLE_COUNT = 6
-const PAGE_SIZE = 24
+const PAGE_SIZE = 12
 
 /* ────────────────────────────────────────────────────────────────
  * Motion (respects prefers-reduced-motion)
@@ -47,8 +47,9 @@ function EntranceStyles() {
  * Page
  * ──────────────────────────────────────────────────────────────── */
 export default function ContestPage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const keyword = searchParams.get('keyword') ?? ''
+  const [searchInput, setSearchInput] = useState(keyword)
 
   const [events, setEvents] = useState<EventItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -149,10 +150,20 @@ export default function ContestPage() {
   // 필터/정렬이 바뀌면 결과 페이지 수도 바뀌니 1페이지로 리셋
   useEffect(() => {
     setCurrentPage(1)
-  }, [activeCategory, sortByDeadline, periodFilter])
+  }, [activeCategory, sortByDeadline, periodFilter, keyword])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  useEffect(() => {
+    setSearchInput(keyword)
+  }, [keyword])
+
+  function handleSearch(e: FormEvent) {
+    e.preventDefault()
+    const trimmed = searchInput.trim()
+    setSearchParams(trimmed ? { keyword: trimmed } : {})
+  }
 
   function handlePageChange(page: number) {
     setCurrentPage(page)
@@ -160,42 +171,25 @@ export default function ContestPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 pb-10 pt-4">
+    <div className="mx-auto max-w-[1160px] px-6 pb-16 pt-10">
       <EntranceStyles />
 
-      <header className="rise-in mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <header className="rise-in mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#1B1B33]">공모전</h1>
-          <p className="mt-1.5 flex items-center gap-1.5 text-sm text-[#6F7095]">
-            전국의 다양한 공모전을 한눈에 확인하고 도전해보세요!
-          </p>
+          <h1 className="text-2xl font-bold text-black">공모전</h1>
+          <p className="mt-2 text-sm text-black">전국 학생을 위한 공모전을 한눈에 보고, 함께할 팀원도 찾아보세요.</p>
         </div>
-        <Link
-          to="/contest/new"
-          className="group inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-[#1B1B33] transition-colors duration-300 hover:text-[#4D4DF1] focus-visible:text-[#4D4DF1] focus-visible:outline-none"
-        >
-          <span className="relative pb-1">
-            공모전 등록하기
-            <span className="absolute bottom-0 left-0 h-px w-full bg-[#ECECF5]" />
-            <span className="absolute bottom-0 left-0 h-px w-full origin-left scale-x-0 bg-[#4D4DF1] transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 motion-reduce:transition-none" />
-          </span>
-          <svg
-            aria-hidden="true"
-            className="h-5 w-5 transition-transform duration-300 ease-out group-hover:translate-x-1.5 group-focus-visible:translate-x-1.5 motion-reduce:transition-none"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.25"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M4 12h15M13 6l6 6-6 6" />
-          </svg>
-        </Link>
+        <p className="flex shrink-0 items-center gap-1.5 text-xs text-[#6F7095]">
+          찾으시는 공모전이 없나요?
+          <Link to="/contest/new" className="flex items-center font-medium text-[#3F4FDB]">
+            등록하기
+            <ChevronRightIcon className="h-3.5 w-3.5" />
+          </Link>
+        </p>
       </header>
 
       {/* Filter bar */}
-      <div className="rise-in mb-6 flex flex-wrap items-start justify-between gap-3" style={{ animationDelay: '90ms' }}>
+      <div className="rise-in mb-5 rounded-xl border border-[#ECECF5] p-4" style={{ animationDelay: '90ms' }}>
         <div className="flex flex-1 flex-wrap gap-2">
           {visibleCategories.map((cat) => (
             <button
@@ -222,6 +216,25 @@ export default function ContestPage() {
             </button>
           )}
         </div>
+
+        <form onSubmit={handleSearch} className="relative mt-4">
+          <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-black" />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="공모전 이름, 주최 기관으로 검색"
+            aria-label="공모전 검색"
+            className="h-11 w-full rounded-lg border border-[#ECECF5] pl-10 pr-4 text-sm text-black placeholder:text-[#A8A9BD] focus:border-[#3F4FDB] focus:outline-none"
+          />
+        </form>
+      </div>
+
+      <div className="rise-in mb-6 flex items-center justify-between gap-3" style={{ animationDelay: '120ms' }}>
+        <p className="min-w-0 truncate text-xs text-black">
+          {keyword && <span className="font-bold">"{keyword}"</span>}
+          {keyword && ' 검색 결과 · '}총 <span className="font-bold">{loading ? '-' : filtered.length}개</span> 공모전
+        </p>
 
         <div className="flex shrink-0 items-center gap-3">
           <div className="relative">
@@ -346,7 +359,7 @@ export default function ContestPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="aspect-[16/10] animate-pulse rounded-2xl bg-[#F3F3FA]" />
           ))}
@@ -357,7 +370,7 @@ export default function ContestPage() {
         </div>
       ) : filtered.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
             {paged.map((event, idx) => (
               <EventCard
                 key={event.id}
@@ -368,11 +381,30 @@ export default function ContestPage() {
               />
             ))}
           </div>
-          <Pagination currentPage={currentPage} totalPages={totalPages} onChange={handlePageChange} />
+          <div className="relative">
+            <Pagination currentPage={currentPage} totalPages={totalPages} onChange={handlePageChange} />
+            <button
+              type="button"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              aria-label="맨 위로"
+              className="absolute right-0 top-0 flex h-8 w-8 items-center justify-center rounded-full bg-[#F3F3FA] text-[#3F4FDB] transition-colors hover:bg-[#E9E9FB]"
+            >
+              ↑
+            </button>
+          </div>
         </>
       ) : (
-        <div className="rounded-2xl border border-dashed border-[#ECECF5] py-16 text-center text-sm text-[#8C8DAE]">
-          이 분야에 등록된 공모전이 아직 없어요.
+        <div className="flex min-h-[560px] flex-col items-center justify-center rounded-xl border border-dashed border-[#ECECF5] text-center">
+          <p className="text-base font-bold text-black">
+            {keyword ? `"${keyword}"에 맞는 공모전이 없어요` : '이 분야에 등록된 공모전이 아직 없어요'}
+          </p>
+          <p className="mt-2 text-sm text-[#6F7095]">알고 있는 활동이라면 직접 등록하고 팀원을 모아보세요.</p>
+          <Link
+            to="/contest/new"
+            className="mt-4 rounded-lg bg-[#3F4FDB] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            공모전 등록하기
+          </Link>
         </div>
       )}
     </div>

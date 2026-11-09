@@ -48,12 +48,12 @@ export default function EventCard({
       ref={cardRef}
       to={`${detailPath}/${event.id}`}
       state={{ event }}
-      className={`group flex flex-col overflow-hidden rounded-2xl border border-[#ECECF5] bg-white shadow-sm shadow-black/[0.03] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/[0.08] ${className}`}
+      className={`group flex flex-col overflow-hidden rounded-xl border border-[#ECECF5] bg-white shadow-sm shadow-black/[0.03] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/[0.08] ${className}`}
       style={style}
     >
       {/* Thumbnail */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#F3F3FA]">
-        {showImage ? (
+      <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#E4E4EA]">
+        {showImage && (
           <img
             src={event.imageUrl!}
             alt=""
@@ -61,61 +61,41 @@ export default function EventCard({
             onError={() => setImageError(true)}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
           />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-[#1B1B33] to-[#1B1B33]" />
         )}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-black/0 to-black/0" />
 
-        {/* Field chip, top-left */}
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-[#4D4DF1] backdrop-blur-sm">
-          {event.fieldLabel ?? '기타'}
+        <span
+          className={`absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[11px] font-semibold shadow-sm ${
+            d.urgent ? 'text-[#E5484D]' : d.closed ? 'text-[#8C8DAE]' : 'text-black'
+          }`}
+        >
+          <ClockIcon className="h-3 w-3" />
+          {d.label}
         </span>
 
-        {/* D-day badge + bookmark, top-right */}
-        <div className="absolute right-3 top-3 flex items-center gap-1.5">
-          <span
-            className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-sm ${
-              d.closed ? 'bg-black/40' : d.urgent ? 'bg-[#FF6B57]' : 'bg-black/55'
-            }`}
-          >
-            <ClockIcon className="h-3 w-3" />
-            {d.label}
-          </span>
-          <button
-            type="button"
-            onClick={handleBookmarkClick}
-            aria-pressed={event.bookmarked}
-            aria-label={event.bookmarked ? '북마크 해제' : '북마크 등록'}
-            className={`flex h-6 w-6 items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
-              event.bookmarked ? 'bg-[#4D4DF1] text-white' : 'bg-black/40 text-white hover:bg-black/55'
-            }`}
-          >
-            <BookmarkIcon className="h-3.5 w-3.5" filled={event.bookmarked} />
-          </button>
-        </div>
-
-        {/* Organizer, bottom-left over gradient */}
-        <span className="absolute bottom-2.5 left-3 text-[12px] font-medium text-white/90 drop-shadow">
-          {event.organizer}
-        </span>
+        <button
+          type="button"
+          onClick={handleBookmarkClick}
+          aria-pressed={event.bookmarked}
+          aria-label={event.bookmarked ? '북마크 해제' : '북마크 등록'}
+          className={`absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-md shadow-sm transition-colors ${
+            event.bookmarked ? 'bg-[#3F4FDB] text-white' : 'bg-white text-black hover:bg-slate-100'
+          }`}
+        >
+          <BookmarkIcon className="h-3.5 w-3.5" filled={event.bookmarked} />
+        </button>
       </div>
 
       {/* Body */}
-      <div className="flex flex-1 flex-col gap-3 px-4 py-4">
-        <h3 className="line-clamp-2 text-[15px] font-bold leading-snug text-[#1B1B33] group-hover:text-[#4D4DF1]">
+      <div className="flex flex-1 flex-col px-3.5 pb-3.5 pt-4">
+        <span className="self-start rounded bg-[#EEF1FD] px-1.5 py-0.5 text-[11px] font-semibold text-[#3F4FDB]">
+          {event.fieldLabel ?? '기타'}
+        </span>
+        <h3 className="mt-2 line-clamp-2 text-[15px] font-bold leading-snug text-black group-hover:text-[#3F4FDB]">
           {event.title}
         </h3>
+        <p className="mt-1.5 truncate text-xs text-[#6F7095]">{event.organizer}</p>
 
-        {event.summarizedDescription && (
-          <p className="line-clamp-2 text-[12px] leading-relaxed text-[#6F7095]">{event.summarizedDescription}</p>
-        )}
-
-        <div className="mt-auto flex items-center justify-between border-t border-[#F0F0F7] pt-2.5 text-[11px] text-[#8C8DAE]">
-          <span>{event.endDate.replaceAll('-', '.')} 마감</span>
-          <span className="font-semibold text-[#4D4DF1] opacity-0 transition-opacity group-hover:opacity-100">
-            자세히 보기 →
-          </span>
-        </div>
+        <p className="mt-auto pt-6 text-xs text-[#6F7095]">{event.endDate.replaceAll('-', '.')} 마감</p>
       </div>
     </Link>
   )

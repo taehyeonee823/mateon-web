@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronDownIcon, SearchIcon } from './icons'
+import { ChatIcon, ChevronDownIcon } from './icons'
 import { useAuth } from '../context/AuthContext'
 import {
   getMyNotifications,
@@ -8,11 +8,10 @@ import {
   type NotificationType,
 } from '../api/notification'
 
-const CATEGORY_TABS = [
-  { label: '공모전', path: '/contest', comingSoon: false },
-  { label: '대외활동', path: '/external', comingSoon: false },
-  { label: '스터디', path: null, comingSoon: true },
-  { label: '동아리', path: null, comingSoon: true },
+const NAV_TABS = [
+  { label: '공모전', path: '/contest' },
+  { label: '대외활동', path: '/external' },
+  { label: '팀 빌딩', path: '/teams/new', match: '/teams' },
 ]
 
 const NOTIFICATION_ICON: Record<NotificationType, { icon: string; bg: string }> = {
@@ -83,96 +82,31 @@ function formatRelativeTime(dateString: string) {
   return `${Math.floor(days / 365)}년 전`
 }
 
-// 기존 왼쪽 사이드바 메뉴를 상단바로 옮긴 내비게이션
-const NAV_LINKS = [
-  { label: '팀 만들기', path: '/teams/new' },
-  { label: '채팅', path: '/chat' },
-  { label: '마이페이지', path: '/my' },
-]
-
-function TopNav() {
-  const location = useLocation()
-  const isActivityActive = CATEGORY_TABS.some((tab) => tab.path && location.pathname.startsWith(tab.path))
-
-  const itemClass = (active: boolean) =>
-    `rounded-xl px-3 py-2 text-sm font-bold transition-colors ${
-      active ? 'bg-brand-50 text-[#4D4DF1]' : 'text-[#6F7095] hover:bg-brand-50/60 hover:text-[#4D4DF1]'
-    }`
-
-  return (
-    <nav className="flex shrink-0 items-center gap-1">
-      <Link to="/" className={itemClass(location.pathname === '/')}>
-        홈
-      </Link>
-
-      {/* 활동 하위 메뉴는 호버 시 드롭다운으로 노출 */}
-      <div className="group relative">
-        <button type="button" className={`flex items-center gap-1 ${itemClass(isActivityActive)}`}>
-          활동
-          <ChevronDownIcon className="h-3.5 w-3.5 transition-transform group-hover:rotate-180" />
-        </button>
-        <div className="invisible absolute left-0 top-full z-50 pt-2 opacity-0 transition-opacity group-hover:visible group-hover:opacity-100">
-          <div className="w-40 rounded-2xl border border-brand-100 bg-white p-2 shadow-lg shadow-black/10">
-            {CATEGORY_TABS.map((tab) =>
-              tab.comingSoon || !tab.path ? (
-                <span
-                  key={tab.label}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-[#4D4DF1]"
-                >
-                  {tab.label}
-                  <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-400">
-                    준비중
-                  </span>
-                </span>
-              ) : (
-                <Link
-                  key={tab.label}
-                  to={tab.path}
-                  className="block rounded-lg px-3 py-2 text-sm font-medium text-[#4D4DF1] transition-colors hover:bg-brand-50/60"
-                >
-                  {tab.label}
-                </Link>
-              ),
-            )}
-          </div>
-        </div>
-      </div>
-
-      {NAV_LINKS.map((link) => (
-        <Link key={link.path} to={link.path} className={itemClass(location.pathname === link.path)}>
-          {link.label}
-        </Link>
-      ))}
-    </nav>
-  )
-}
-
 export default function Topbar() {
   const { isLoggedIn, profile, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [allNotifications, setAllNotifications] = useState<NotificationResponseDTO[]>([])
   const [isBellHovered, setIsBellHovered] = useState(false)
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false)
   const [isDrawerVisible, setIsDrawerVisible] = useState(false)
   const [selectedNotification, setSelectedNotification] = useState<NotificationResponseDTO | null>(null)
-  const [isCategoryOpen, setIsCategoryOpen] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState('전체')
-  const [keyword, setKeyword] = useState('')
-  const categoryRef = useRef<HTMLDivElement>(null)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const profileMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!isCategoryOpen) return
+    if (!isProfileMenuOpen) return
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
-        setIsCategoryOpen(false)
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setIsProfileMenuOpen(false)
       }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isCategoryOpen])
+  }, [isProfileMenuOpen])
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -224,20 +158,6 @@ export default function Topbar() {
     }
   }, [isNotificationDrawerOpen])
 
-  const handleSelectCategory = (tab: (typeof CATEGORY_TABS)[number]) => {
-    if (tab.comingSoon) return
-    setSelectedCategory(tab.label)
-    setIsCategoryOpen(false)
-    if (tab.path) navigate(tab.path)
-  }
-
-  const handleSearch = (e: FormEvent) => {
-    e.preventDefault()
-    const trimmed = keyword.trim()
-    const query = trimmed ? `?keyword=${encodeURIComponent(trimmed)}` : ''
-    navigate(`${selectedCategory === '대외활동' ? '/external' : '/contest'}${query}`)
-  }
-
   const handleLogout = () => {
     const message = profile ? `${profile.name}님 로그아웃 하시겠어요?` : '로그아웃 하시겠어요?'
     if (!window.confirm(message)) return
@@ -246,70 +166,33 @@ export default function Topbar() {
   }
 
   return (
-    // 3열 그리드: 좌우 열 폭을 같게 둬서 검색창과 탭이 화면 정중앙에 오고,
-    // 로고·검색창·알림/로그인은 첫 줄에 같은 높이로 정렬된다. 탭은 둘째 줄 가운데.
-    <div className="grid grid-cols-[1fr_minmax(0,42rem)_1fr] items-center gap-x-6 gap-y-3 px-20 py-6">
-      <Link to="/" aria-label="MateOn 홈" className="flex items-center justify-self-start">
-        <img src="/landing_img/logo.svg" alt="" className="h-9 w-auto" />
-      </Link>
-      <form onSubmit={handleSearch} className="flex w-full gap-2">
-        <div className="relative shrink-0" ref={categoryRef}>
-          <button
-            type="button"
-            onClick={() => setIsCategoryOpen((v) => !v)}
-            aria-expanded={isCategoryOpen}
-            className="flex h-full w-36 items-center justify-between rounded-xl border border-brand-100 bg-white px-4 py-3 text-sm font-semibold text-black transition-colors hover:border-brand-300"
-          >
-            {selectedCategory}
-            <ChevronDownIcon
-              className={`h-3.5 w-3.5 text-brand-400 transition-transform ${isCategoryOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
+    <header className="border-b border-slate-100 bg-white">
+    <div className="mx-auto flex h-[72px] max-w-[1160px] items-center justify-between gap-6 px-6">
+      <div className="flex h-full items-center gap-10">
+        <Link to="/" aria-label="MateOn 홈" className="flex shrink-0 items-center">
+          <img src="/landing_img/logo.svg" alt="" className="h-8 w-auto" />
+        </Link>
 
-          {isCategoryOpen && (
-            <div className="absolute left-0 top-full z-50 mt-2 w-36 rounded-2xl border border-brand-100 bg-white p-2 shadow-lg shadow-black/10">
-              {CATEGORY_TABS.map((tab) => (
-                <button
-                  key={tab.label}
-                  type="button"
-                  disabled={tab.comingSoon}
-                  onClick={() => handleSelectCategory(tab)}
-                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors ${
-                    tab.comingSoon
-                      ? 'text-brand-300'
-                      : 'text-brand-900 hover:bg-brand-50/60'
-                  } ${selectedCategory === tab.label ? 'bg-brand-50/60' : ''}`}
-                >
-                  {tab.label}
-                  {tab.comingSoon && (
-                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-400">
-                      준비중
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <nav className="flex h-full items-center gap-8">
+          {NAV_TABS.map((tab) => {
+            const active = location.pathname.startsWith(tab.match ?? tab.path)
+            return (
+              <Link
+                key={tab.path}
+                to={tab.path}
+                aria-current={active ? 'page' : undefined}
+                className={`flex h-full items-center whitespace-nowrap border-b-2 px-1 text-base font-semibold transition-colors ${
+                  active ? 'border-[#3F4FDB] text-[#3F4FDB]' : 'border-transparent text-black hover:text-[#3F4FDB]'
+                }`}
+              >
+                {tab.label}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
 
-        <div className="relative flex-1">
-          <input
-            type="text"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            placeholder="공모전, 분야, 기술, 키워드를 검색해보세요"
-            className="w-full rounded-full border border-brand-100 bg-brand-50/40 py-3 pl-4 pr-20 text-sm text-brand-900 placeholder:text-brand-400 focus:border-brand-300 focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-full bg-[#2554F0] px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            <SearchIcon className="h-3.5 w-3" />
-          </button>
-        </div>
-      </form>
-
-      <div className="flex items-center justify-end gap-6">
+      <div className="flex shrink-0 items-center justify-end gap-6">
         <div
           className="relative shrink-0"
           onMouseEnter={() => setIsBellHovered(true)}
@@ -500,9 +383,22 @@ export default function Topbar() {
           </div>
         )}
 
+        <Link
+          to="/chat"
+          aria-label="채팅"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-brand-50"
+        >
+          <ChatIcon className="h-6 w-6" />
+        </Link>
+
         {isLoggedIn && profile ? (
-          <>
-            <Link to="/my" className="flex shrink-0 items-center gap-2">
+          <div className="relative shrink-0" ref={profileMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsProfileMenuOpen((v) => !v)}
+              aria-expanded={isProfileMenuOpen}
+              className="flex items-center gap-2"
+            >
               {profile.profileImageUrl ? (
                 <img
                   src={profile.profileImageUrl}
@@ -514,17 +410,31 @@ export default function Topbar() {
                   <img src="/landing_img/myPage/user.svg" alt="" className="h-5 w-5" />
                 </span>
               )}
-              <span className="text-sm font-semibold text-brand-900">{profile.name}</span>
-            </Link>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
-            >
-              로그아웃
+              <span className="text-base font-semibold text-black">{profile.name}</span>
+              <ChevronDownIcon
+                className={`h-4 w-4 text-black transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`}
+              />
             </button>
-          </>
+
+            {isProfileMenuOpen && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-36 rounded-2xl border border-brand-100 bg-white p-2 shadow-lg shadow-black/10">
+                <Link
+                  to="/my"
+                  onClick={() => setIsProfileMenuOpen(false)}
+                  className="block rounded-lg px-3 py-2 text-sm font-medium text-brand-900 transition-colors hover:bg-brand-50/60"
+                >
+                  마이페이지
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-500 transition-colors hover:bg-brand-50/60"
+                >
+                  로그아웃
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <>
             <Link
@@ -543,11 +453,7 @@ export default function Topbar() {
           </>
         )}
       </div>
-
-      {/* 검색창 아래 탭 내비게이션 */}
-      <div className="col-start-2 flex justify-center">
-        <TopNav />
-      </div>
     </div>
+    </header>
   )
 }
