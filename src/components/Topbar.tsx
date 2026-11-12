@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ChatIcon, ChevronDownIcon } from './icons'
+import { ChatIcon } from './icons'
 import { useAuth } from '../context/AuthContext'
+import { useChatPanel } from '../context/ChatPanel'
 import {
   getMyNotifications,
   type NotificationResponseDTO,
@@ -84,6 +85,7 @@ function formatRelativeTime(dateString: string) {
 
 export default function Topbar() {
   const { isLoggedIn, profile, logout } = useAuth()
+  const { isOpen: isChatPanelOpen, toggle: toggleChatPanel } = useChatPanel()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -92,21 +94,6 @@ export default function Topbar() {
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false)
   const [isDrawerVisible, setIsDrawerVisible] = useState(false)
   const [selectedNotification, setSelectedNotification] = useState<NotificationResponseDTO | null>(null)
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
-  const profileMenuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!isProfileMenuOpen) return
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
-        setIsProfileMenuOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isProfileMenuOpen])
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -383,58 +370,44 @@ export default function Topbar() {
           </div>
         )}
 
-        <Link
-          to="/chat"
+        <button
+          type="button"
+          onClick={() => (isLoggedIn ? toggleChatPanel() : navigate('/login'))}
           aria-label="채팅"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-brand-50"
+          aria-pressed={isChatPanelOpen}
+          className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+            isChatPanelOpen ? 'bg-brand-50 text-[#3F4FDB]' : 'text-black hover:bg-brand-50'
+          }`}
         >
           <ChatIcon className="h-6 w-6" />
-        </Link>
+        </button>
 
         {isLoggedIn && profile ? (
-          <div className="relative shrink-0" ref={profileMenuRef}>
-            <button
-              type="button"
-              onClick={() => setIsProfileMenuOpen((v) => !v)}
-              aria-expanded={isProfileMenuOpen}
-              className="flex items-center gap-2"
-            >
-              {profile.profileImageUrl ? (
-                <img
-                  src={profile.profileImageUrl}
-                  alt=""
-                  className="h-9 w-9 rounded-full object-cover"
-                />
-              ) : (
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100">
-                  <img src="/landing_img/myPage/user.svg" alt="" className="h-5 w-5" />
-                </span>
-              )}
-              <span className="text-base font-semibold text-black">{profile.name}</span>
-              <ChevronDownIcon
-                className={`h-4 w-4 text-black transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`}
+          <>
+          <Link to="/my" aria-label="마이페이지" className="flex shrink-0 items-center gap-2 rounded-full transition-opacity hover:opacity-80">
+            {profile.profileImageUrl ? (
+              <img
+                src={profile.profileImageUrl}
+                alt=""
+                className="h-9 w-9 rounded-full object-cover"
               />
-            </button>
-
-            {isProfileMenuOpen && (
-              <div className="absolute right-0 top-full z-50 mt-2 w-36 rounded-2xl border border-brand-100 bg-white p-2 shadow-lg shadow-black/10">
-                <Link
-                  to="/my"
-                  onClick={() => setIsProfileMenuOpen(false)}
-                  className="block rounded-lg px-3 py-2 text-sm font-medium text-brand-900 transition-colors hover:bg-brand-50/60"
-                >
-                  마이페이지
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-500 transition-colors hover:bg-brand-50/60"
-                >
-                  로그아웃
-                </button>
-              </div>
+            ) : (
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100">
+                <img src="/landing_img/myPage/user.svg" alt="" className="h-5 w-5" />
+              </span>
             )}
-          </div>
+            <span className="text-base font-semibold text-black">{profile.name}</span>
+          </Link>
+
+          {/* 바로 로그아웃할 수 있는 버튼 */}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex shrink-0 items-center rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
+          >
+            로그아웃
+          </button>
+          </>
         ) : (
           <>
             <Link

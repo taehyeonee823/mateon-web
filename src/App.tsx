@@ -23,10 +23,15 @@ import CreateTeamPreview from './pages/CreateTeamPreview'
 import DreamyWidget from './components/DreamyWidget'
 import TeamDetail from './pages/TeamDetail'
 import TeamEdit from './pages/TeamEdit'
+import ChatPanel from './components/chat/ChatPanel'
+import { ChatPanelProvider } from './context/ChatPanel'
 
 function App() {
   return (
-    <>
+    <ChatPanelProvider>
+    {/* 채팅 패널이 열리면 페이지는 왼쪽 컬럼으로 줄어들고 오른쪽에 패널이 붙는다 */}
+    <div className="flex min-h-screen">
+    <div className="min-w-0 flex-1">
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
@@ -81,8 +86,11 @@ function App() {
         </Route>
       </Route>
     </Routes>
+    </div>
+    <ChatPanel />
+    </div>
     <DreamyWidget />
-    </>
+    </ChatPanelProvider>
   )
 }
 
