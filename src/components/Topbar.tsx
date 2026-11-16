@@ -1,13 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ChatIcon } from './icons'
+import NotificationRow from './NotificationRow'
 import { useAuth } from '../context/AuthContext'
-import { useChatPanel } from '../context/ChatPanel'
-import {
-  getMyNotifications,
-  type NotificationResponseDTO,
-  type NotificationType,
-} from '../api/notification'
+import { useNotifications } from '../context/Notifications'
+import { useSidePanel } from '../context/SidePanel'
 
 const NAV_TABS = [
   { label: '공모전', path: '/contest' },
@@ -15,135 +12,84 @@ const NAV_TABS = [
   { label: '팀 빌딩', path: '/teams/new', match: '/teams' },
 ]
 
-const NOTIFICATION_ICON: Record<NotificationType, { icon: string; bg: string }> = {
-  APPROVE: { icon: '/noti/rocket_fill.svg', bg: 'bg-emerald-50' },
-  REJECT: { icon: '/noti/rocket_fill.svg', bg: 'bg-rose-50' },
-  INFO: { icon: '/noti/message_fill.svg', bg: 'bg-[#2554F0]/10' },
+function MenuIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className={className} aria-hidden="true">
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  )
 }
 
-type GroupedNotification = NotificationResponseDTO & { count: number }
-
-// 팀/활동 알림은 하나하나 내용이 다 달라서 묶지 않고, 메시지(채팅) 알림만
-// 같은 상대와 연달아 왔을 때 한 줄로 묶어 "+N"으로 나머지 개수를 표시한다.
-function isMessageNotification(n: NotificationResponseDTO) {
-  const isTeamRelated = n.title.includes('팀') || n.content.includes('팀')
-  return !isTeamRelated && n.type === 'INFO'
+function CloseIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className={className} aria-hidden="true">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  )
 }
 
-function groupConsecutiveNotifications(list: NotificationResponseDTO[]): GroupedNotification[] {
-  const grouped: GroupedNotification[] = []
+const DRAWER_MS = 350
+const DRAWER_EASING = 'ease-[cubic-bezier(0.16,1,0.3,1)]'
 
-  for (const n of list) {
-    const last = grouped[grouped.length - 1]
-    if (
-      last &&
-      isMessageNotification(n) &&
-      isMessageNotification(last) &&
-      last.title === n.title &&
-      last.type === n.type
-    ) {
-      last.count += 1
-    } else {
-      grouped.push({ ...n, count: 1 })
+// 오른쪽에서 슬라이드되는 드로어의 열림/표시 상태.
+// 마운트 직후 바로 상태를 바꾸면 브라우저가 시작 위치(translate-x-full)를
+// 페인트하기 전에 최종 위치로 넘어가버려 트랜지션이 씹힐 수 있다.
+// rAF를 두 번 중첩해 한 프레임을 확실히 그리게 한 뒤 전환을 건다.
+function useSlideDrawer() {
+  const [isOpen, setIsOpen] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+    let frame2 = 0
+    const frame1 = requestAnimationFrame(() => {
+      frame2 = requestAnimationFrame(() => setIsVisible(true))
+    })
+    return () => {
+      cancelAnimationFrame(frame1)
+      cancelAnimationFrame(frame2)
     }
+  }, [isOpen])
+
+  const open = () => setIsOpen(true)
+  const close = () => {
+    setIsVisible(false)
+    setTimeout(() => setIsOpen(false), DRAWER_MS)
   }
 
-  return grouped
-}
-
-function getNotificationIcon(n: NotificationResponseDTO) {
-  const isTeamRelated = n.title.includes('팀') || n.content.includes('팀')
-
-  if (isTeamRelated) {
-    return { icon: '/noti/rocket_fill.svg', bg: n.type === 'REJECT' ? 'bg-rose-50' : 'bg-emerald-50' }
-  }
-
-  return NOTIFICATION_ICON[n.type]
-}
-
-function formatRelativeTime(dateString: string) {
-  const diffMs = Date.now() - new Date(dateString).getTime()
-  const minutes = Math.floor(diffMs / (1000 * 60))
-
-  if (minutes < 1) return '방금 전'
-  if (minutes < 60) return `${minutes}분 전`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}시간 전`
-
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}일 전`
-
-  const weeks = Math.floor(days / 7)
-  if (weeks < 5) return `${weeks}주 전`
-
-  const months = Math.floor(days / 30)
-  if (months < 12) return `${months}개월 전`
-
-  return `${Math.floor(days / 365)}년 전`
+  return { isOpen, isVisible, open, close }
 }
 
 export default function Topbar() {
   const { isLoggedIn, profile, logout } = useAuth()
-  const { isOpen: isChatPanelOpen, toggle: toggleChatPanel } = useChatPanel()
+  const { active: activePanel, open: openPanel, toggle: togglePanel } = useSidePanel()
+  const { grouped: groupedNotifications, hasUnread } = useNotifications()
   const navigate = useNavigate()
   const location = useLocation()
 
-  const [allNotifications, setAllNotifications] = useState<NotificationResponseDTO[]>([])
   const [isBellHovered, setIsBellHovered] = useState(false)
-  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false)
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false)
-  const [selectedNotification, setSelectedNotification] = useState<NotificationResponseDTO | null>(null)
+  // 폰/태블릿 폭에서 탑바 우측 기능을 모아 보여주는 메뉴 드로어
+  const menuDrawer = useSlideDrawer()
 
+  const previewNotifications = groupedNotifications.slice(0, 3)
+  const isChatPanelOpen = activePanel === 'chat'
+  const isNotificationPanelOpen = activePanel === 'notifications'
+
+  // 페이지를 이동하면 메뉴는 닫는다.
   useEffect(() => {
-    if (!isLoggedIn) {
-      setAllNotifications([])
-      return
-    }
-
-    getMyNotifications()
-      .then((list) => {
-        const sorted = [...list].sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        )
-        setAllNotifications(sorted)
-      })
-      .catch(() => setAllNotifications([]))
-  }, [isLoggedIn])
-
-  const groupedNotifications = useMemo(
-    () => groupConsecutiveNotifications(allNotifications),
-    [allNotifications],
-  )
-  const notifications = groupedNotifications.slice(0, 3)
-  const hasUnread = allNotifications.some((n) => !n.isRead)
-
-  useEffect(() => {
-    if (!isNotificationDrawerOpen) return
-    // 마운트 직후 바로 상태를 바꾸면 브라우저가 시작 위치(translate-x-full)를
-    // 페인트하기 전에 최종 위치로 넘어가버려 트랜지션이 씹힐 수 있다.
-    // rAF를 두 번 중첩해 한 프레임을 확실히 그리게 한 뒤 전환을 건다.
-    const frame1 = requestAnimationFrame(() => {
-      const frame2 = requestAnimationFrame(() => setIsDrawerVisible(true))
-      return () => cancelAnimationFrame(frame2)
-    })
-    return () => cancelAnimationFrame(frame1)
-  }, [isNotificationDrawerOpen])
-
-  function closeNotificationDrawer() {
-    setIsDrawerVisible(false)
-    setTimeout(() => setIsNotificationDrawerOpen(false), 350)
-  }
+    if (menuDrawer.isOpen) menuDrawer.close()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
 
   // 드로어가 떠 있는 동안은 뒤 배경 스크롤을 잠가서 스크롤이 따로 놀게 한다.
   useEffect(() => {
-    if (!isNotificationDrawerOpen) return
+    if (!menuDrawer.isOpen) return
     const original = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = original
     }
-  }, [isNotificationDrawerOpen])
+  }, [menuDrawer.isOpen])
 
   const handleLogout = () => {
     const message = profile ? `${profile.name}님 로그아웃 하시겠어요?` : '로그아웃 하시겠어요?'
@@ -152,15 +98,47 @@ export default function Topbar() {
     navigate('/')
   }
 
+  const handleNotificationClick = () => {
+    setIsBellHovered(false)
+    if (menuDrawer.isOpen) menuDrawer.close()
+    if (isLoggedIn) togglePanel('notifications')
+    else navigate('/login')
+  }
+
+  const handleChatClick = () => {
+    if (menuDrawer.isOpen) menuDrawer.close()
+    if (isLoggedIn) togglePanel('chat')
+    else navigate('/login')
+  }
+
+  const profileAvatar = profile?.profileImageUrl ? (
+    <img src={profile.profileImageUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
+  ) : (
+    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100">
+      <img src="/landing_img/myPage/user.svg" alt="" className="h-5 w-5" />
+    </span>
+  )
+
+  const iconButtonClass = (active: boolean) =>
+    `relative flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+      active ? 'bg-brand-50 text-[#3F4FDB]' : 'text-black hover:bg-brand-50'
+    }`
+
+  const menuItemClass =
+    'flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-[15px] font-semibold text-brand-900 transition-colors hover:bg-brand-50/60'
+
   return (
-    <header className="border-b border-slate-100 bg-white">
-    <div className="mx-auto flex h-[72px] max-w-[1160px] items-center justify-between gap-6 px-6">
-      <div className="flex h-full items-center gap-10">
+    <>
+    {/* @container: 뷰포트가 아니라 헤더 자신의 폭 기준으로 단계가 바뀐다 (채팅/알림 패널이 열려 좁아져도 대응) */}
+    <header className="@container border-b border-slate-100 bg-white">
+    <div className="mx-auto flex h-[72px] max-w-[1160px] items-center justify-between gap-4 px-4 sm:px-6 @tablet:gap-6">
+      <div className="flex h-full min-w-0 items-center gap-6 @desktop:gap-10">
         <Link to="/" aria-label="MateOn 홈" className="flex shrink-0 items-center">
           <img src="/landing_img/logo.svg" alt="" className="h-8 w-auto" />
         </Link>
 
-        <nav className="flex h-full items-center gap-8">
+        {/* 메인 탭 — 폰 폭에서는 메뉴 드로어 안으로 들어간다 */}
+        <nav className="hidden h-full items-center gap-5 @tablet:flex @desktop:gap-8">
           {NAV_TABS.map((tab) => {
             const active = location.pathname.startsWith(tab.match ?? tab.path)
             return (
@@ -179,16 +157,19 @@ export default function Topbar() {
         </nav>
       </div>
 
-      <div className="flex shrink-0 items-center justify-end gap-6">
+      <div className="flex shrink-0 items-center justify-end gap-2 @tablet:gap-3 @desktop:gap-6">
+        {/* 알림 — 폰 폭에서는 로그인했을 때만 노출. 누르면 오른쪽 알림 패널이 열린다 */}
         <div
-          className="relative shrink-0"
+          className={`relative shrink-0 ${isLoggedIn ? '' : 'hidden @tablet:block'}`}
           onMouseEnter={() => setIsBellHovered(true)}
           onMouseLeave={() => setIsBellHovered(false)}
         >
           <button
             type="button"
             aria-label="알림"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full text-brand-500 transition-colors hover:bg-brand-50 hover:text-brand-700"
+            aria-pressed={isNotificationPanelOpen}
+            onClick={handleNotificationClick}
+            className={iconButtonClass(isNotificationPanelOpen)}
           >
             <img src="/noti/notification_line.svg" alt="" className="h-6 w-6" />
             {hasUnread && (
@@ -196,43 +177,16 @@ export default function Topbar() {
             )}
           </button>
 
-          {isBellHovered && isLoggedIn && (
-            <div className="absolute right-0 top-full z-50 w-80 rounded-2xl border border-brand-100 bg-white p-2 shadow-lg shadow-black/10">
-              {notifications.length > 0 ? (
-                notifications.map((n) => (
+          {/* 마우스 올렸을 때 최근 3개 미리보기 (패널이 열려 있으면 생략) */}
+          {isBellHovered && isLoggedIn && !isNotificationPanelOpen && (
+            <div className="absolute right-0 top-full z-50 hidden w-80 rounded-2xl border border-brand-100 bg-white p-2 shadow-lg shadow-black/10 @tablet:block">
+              {previewNotifications.length > 0 ? (
+                previewNotifications.map((n) => (
                   <div
                     key={n.id}
                     className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-left hover:bg-brand-50/60"
                   >
-                    <span
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full p-1.5 ${getNotificationIcon(n).bg}`}
-                    >
-                      <img
-                        src={getNotificationIcon(n).icon}
-                        alt=""
-                        className="h-full w-full object-contain"
-                      />
-                    </span>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="flex min-w-0 items-center gap-1">
-                          <p className="truncate text-sm font-semibold text-brand-900">{n.title}</p>
-                          {n.count > 1 && (
-                            <span className="shrink-0 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-600">
-                              +{n.count - 1}
-                            </span>
-                          )}
-                        </span>
-                        <span className="flex shrink-0 items-center gap-1.5">
-                          <span className="text-[10px] text-brand-400">
-                            {formatRelativeTime(n.createdAt)}
-                          </span>
-                          {!n.isRead && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 truncate text-xs text-brand-500">{n.content}</p>
-                    </div>
+                    <NotificationRow notification={n} iconSize="h-7 w-7" />
                   </div>
                 ))
               ) : (
@@ -242,8 +196,8 @@ export default function Topbar() {
               <button
                 type="button"
                 onClick={() => {
-                  setIsNotificationDrawerOpen(true)
                   setIsBellHovered(false)
+                  openPanel('notifications')
                 }}
                 className="mt-1 w-full rounded-xl py-2.5 text-center text-sm font-semibold text-brand-500 transition-colors hover:bg-brand-50/60"
               >
@@ -253,180 +207,175 @@ export default function Topbar() {
           )}
         </div>
 
-        {isNotificationDrawerOpen && (
-          <>
-            <div
-              className={`fixed inset-0 z-[60] bg-black/20 transition-opacity duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                isDrawerVisible ? 'opacity-100' : 'opacity-0'
-              }`}
-              onClick={closeNotificationDrawer}
-            />
-            <div
-              className={`fixed inset-y-0 right-0 z-[70] flex w-full max-w-sm flex-col bg-white shadow-xl shadow-black/10 transition-transform duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
-                isDrawerVisible ? 'translate-x-0' : 'translate-x-full'
-              }`}
-            >
-              <div className="relative flex items-center justify-center border-b border-brand-100 px-5 py-4">
-                <button
-                  type="button"
-                  aria-label="닫기"
-                  onClick={closeNotificationDrawer}
-                  className="absolute left-5 flex h-8 w-8 items-center justify-center rounded-full text-xl text-brand-400 transition-colors hover:bg-brand-50 hover:text-brand-700"
-                >
-                  »
-                </button>
-                <p className="text-base font-bold text-brand-900">알림</p>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-3">
-                {groupedNotifications.length > 0 ? (
-                  groupedNotifications.map((n) => (
-                    <button
-                      key={n.id}
-                      type="button"
-                      onClick={() => setSelectedNotification(n)}
-                      className="flex w-full items-start gap-2.5 rounded-xl px-3 py-3 text-left hover:bg-brand-50/60"
-                    >
-                      <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full p-1.5 ${getNotificationIcon(n).bg}`}
-                      >
-                        <img
-                          src={getNotificationIcon(n).icon}
-                          alt=""
-                          className="h-full w-full object-contain"
-                        />
-                      </span>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="flex min-w-0 items-center gap-1">
-                            <p className="truncate text-sm font-semibold text-brand-900">{n.title}</p>
-                            {n.count > 1 && (
-                              <span className="shrink-0 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-600">
-                                +{n.count - 1}
-                              </span>
-                            )}
-                          </span>
-                          <span className="flex shrink-0 items-center gap-1.5">
-                            <span className="text-[10px] text-brand-400">
-                              {formatRelativeTime(n.createdAt)}
-                            </span>
-                            {!n.isRead && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />}
-                          </span>
-                        </div>
-                        <p className="mt-0.5 truncate text-xs text-brand-500">{n.content}</p>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <p className="px-3 py-8 text-center text-sm text-brand-400">알림이 없어요.</p>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-
-        {selectedNotification && (
-          <div
-            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/30 p-6 backdrop-blur-sm"
-            onClick={() => setSelectedNotification(null)}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-2xl bg-white p-7 shadow-xl shadow-black/20"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full p-2 ${getNotificationIcon(selectedNotification).bg}`}
-                  >
-                    <img
-                      src={getNotificationIcon(selectedNotification).icon}
-                      alt=""
-                      className="h-full w-full object-contain"
-                    />
-                  </span>
-                  <div>
-                    <p className="text-lg font-bold text-brand-900">{selectedNotification.title}</p>
-                    <p className="text-sm text-brand-400">
-                      {formatRelativeTime(selectedNotification.createdAt)}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  aria-label="닫기"
-                  onClick={() => setSelectedNotification(null)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-brand-400 transition-colors hover:bg-brand-50 hover:text-brand-700"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <p className="mt-5 whitespace-pre-wrap text-base leading-relaxed text-brand-700">
-                {selectedNotification.content}
-              </p>
-            </div>
-          </div>
-        )}
-
+        {/* 태블릿 이상: 채팅 */}
         <button
           type="button"
-          onClick={() => (isLoggedIn ? toggleChatPanel() : navigate('/login'))}
+          onClick={handleChatClick}
           aria-label="채팅"
           aria-pressed={isChatPanelOpen}
-          className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-            isChatPanelOpen ? 'bg-brand-50 text-[#3F4FDB]' : 'text-black hover:bg-brand-50'
-          }`}
+          className={`hidden @tablet:flex ${iconButtonClass(isChatPanelOpen)}`}
         >
           <ChatIcon className="h-6 w-6" />
         </button>
 
-        {isLoggedIn && profile ? (
-          <>
-          <Link to="/my" aria-label="마이페이지" className="flex shrink-0 items-center gap-2 rounded-full transition-opacity hover:opacity-80">
-            {profile.profileImageUrl ? (
-              <img
-                src={profile.profileImageUrl}
-                alt=""
-                className="h-9 w-9 rounded-full object-cover"
-              />
-            ) : (
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100">
-                <img src="/landing_img/myPage/user.svg" alt="" className="h-5 w-5" />
-              </span>
-            )}
-            <span className="text-base font-semibold text-black">{profile.name}</span>
-          </Link>
+        {/* PC 전용: 내 정보 · 로그아웃 / 로그인 · 가입 */}
+        <div className="hidden items-center gap-6 @desktop:flex">
+          {isLoggedIn && profile ? (
+            <>
+              <Link to="/my" aria-label="마이페이지" className="flex shrink-0 items-center gap-2 rounded-full transition-opacity hover:opacity-80">
+                {profileAvatar}
+                <span className="text-base font-semibold text-black">{profile.name}</span>
+              </Link>
 
-          {/* 바로 로그아웃할 수 있는 버튼 */}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex shrink-0 items-center rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
-          >
-            로그아웃
-          </button>
-          </>
-        ) : (
-          <>
-            <Link
-              to="/login"
-              className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
-            >
-              로그인
-            </Link>
+              {/* 바로 로그아웃할 수 있는 버튼 */}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex shrink-0 items-center rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
+              >
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
+              >
+                로그인
+              </Link>
 
-            <Link
-              to="/signup"
-              className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
-            >
-              무료로 시작하기
-            </Link>
-          </>
-        )}
+              <Link
+                to="/signup"
+                className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
+              >
+                무료로 시작하기
+              </Link>
+            </>
+          )}
+        </div>
+
+        {/* PC 미만: 메뉴 버튼 */}
+        <button
+          type="button"
+          onClick={menuDrawer.open}
+          aria-label="메뉴 열기"
+          aria-expanded={menuDrawer.isOpen}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-brand-50 @desktop:hidden"
+        >
+          <MenuIcon className="h-6 w-6" />
+        </button>
       </div>
     </div>
     </header>
+
+    {/* 메뉴 드로어는 position: fixed라 @container(containment) 바깥에 둔다 */}
+    {menuDrawer.isOpen && (
+      <>
+        <div
+          className={`fixed inset-0 z-[60] bg-black/20 transition-opacity duration-[350ms] ${DRAWER_EASING} ${
+            menuDrawer.isVisible ? 'opacity-100' : 'opacity-0'
+          }`}
+          onClick={menuDrawer.close}
+        />
+        <div
+          className={`fixed inset-y-0 right-0 z-[70] flex w-[min(100vw-3rem,320px)] flex-col bg-white shadow-xl shadow-black/10 transition-transform duration-[350ms] ${DRAWER_EASING} will-change-transform ${
+            menuDrawer.isVisible ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <div className="flex h-[72px] items-center justify-between border-b border-brand-100 px-5">
+            {isLoggedIn && profile ? (
+              <Link to="/my" className="flex min-w-0 items-center gap-3" onClick={menuDrawer.close}>
+                {profileAvatar}
+                <span className="min-w-0">
+                  <span className="block truncate text-base font-bold text-brand-900">{profile.name}</span>
+                  <span className="block text-xs text-brand-400">마이페이지</span>
+                </span>
+              </Link>
+            ) : (
+              <p className="text-base font-bold text-brand-900">메뉴</p>
+            )}
+            <button
+              type="button"
+              aria-label="메뉴 닫기"
+              onClick={menuDrawer.close}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-brand-400 transition-colors hover:bg-brand-50 hover:text-brand-700"
+            >
+              <CloseIcon className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3">
+            <nav className="flex flex-col gap-0.5">
+              {NAV_TABS.map((tab) => {
+                const active = location.pathname.startsWith(tab.match ?? tab.path)
+                return (
+                  <Link
+                    key={tab.path}
+                    to={tab.path}
+                    onClick={menuDrawer.close}
+                    aria-current={active ? 'page' : undefined}
+                    className={`${menuItemClass} ${active ? 'bg-brand-50 text-[#3F4FDB]' : ''}`}
+                  >
+                    {tab.label}
+                  </Link>
+                )
+              })}
+            </nav>
+
+            <div className="my-3 h-px bg-brand-100" />
+
+            <div className="flex flex-col gap-0.5">
+              <button type="button" onClick={handleChatClick} className={menuItemClass}>
+                <ChatIcon className="h-5 w-5" />
+                채팅
+              </button>
+              {isLoggedIn && (
+                <button type="button" onClick={handleNotificationClick} className={menuItemClass}>
+                  <span className="relative flex h-5 w-5 items-center justify-center">
+                    <img src="/noti/notification_line.svg" alt="" className="h-5 w-5" />
+                    {hasUnread && <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-rose-500" />}
+                  </span>
+                  알림
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-brand-100 p-4">
+            {isLoggedIn ? (
+              <button
+                type="button"
+                onClick={() => {
+                  menuDrawer.close()
+                  handleLogout()
+                }}
+                className="h-11 w-full rounded-xl bg-gray-200 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
+              >
+                로그아웃
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Link
+                  to="/login"
+                  onClick={menuDrawer.close}
+                  className="flex h-11 items-center justify-center rounded-xl bg-gray-200 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
+                >
+                  로그인
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={menuDrawer.close}
+                  className="flex h-11 items-center justify-center rounded-xl bg-[#4D4DF1] text-sm font-semibold text-white transition-colors hover:bg-[#3D3DD9]"
+                >
+                  무료로 시작하기
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </>
+    )}
+    </>
   )
 }

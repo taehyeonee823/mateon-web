@@ -1,4 +1,5 @@
 import defaultTheme from 'tailwindcss/defaultTheme'
+import containerQueries from '@tailwindcss/container-queries'
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -11,6 +12,11 @@ export default {
       handwriting: ['Nanum Pen Script', 'cursive'],
     },
     extend: {
+      // 탑바처럼 뷰포트가 아니라 자기 폭(채팅 패널이 열리면 줄어듦)에 반응해야 하는 요소용
+      containers: {
+        tablet: '768px',
+        desktop: '1024px',
+      },
       colors: {
         brand: {
           50: '#F0F4FF',
@@ -27,5 +33,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [containerQueries],
 }

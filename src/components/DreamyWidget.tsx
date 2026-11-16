@@ -4,6 +4,7 @@ import { sendChatbotMessage } from '../api/chatbot'
 import { getRecommendedTeams } from '../api/recommend'
 import type { TeamRecommendation } from '../types/recommend'
 import { useAuth } from '../context/AuthContext'
+import { useSidePanel } from '../context/SidePanel'
 
 type RecommendationState = 'loading' | 'loaded' | 'error'
 
@@ -16,7 +17,14 @@ type DreamyMessage = {
   recommendationError?: string
 }
 
+// 오른쪽 사이드 패널(채팅/알림)이 열리면 페이지가 400px 밀리므로, PC에서는 플로팅 요소도 같은 거리·같은 타이밍으로 왼쪽으로 옮긴다.
+// (좁은 화면에서는 패널이 위를 덮는 오버레이라 옮길 필요가 없다)
+const SIDE_PANEL_SHIFT =
+  'transition-[right] duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] lg:right-[calc(1.5rem+400px)]'
+
 export default function DreamyWidget() {
+  const { active: activeSidePanel } = useSidePanel()
+  const sidePanelShift = activeSidePanel ? SIDE_PANEL_SHIFT : 'transition-[right] duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)]'
   const { isLoggedIn } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -116,7 +124,7 @@ export default function DreamyWidget() {
   return (
     <>
       {isOpen && (
-        <div className="fixed bottom-24 right-4 z-50 flex h-[min(640px,calc(100dvh-7rem))] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 sm:bottom-28 sm:right-6">
+        <div className={`fixed bottom-24 right-4 z-50 flex h-[min(640px,calc(100dvh-7rem))] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 sm:bottom-28 sm:right-6 ${sidePanelShift}`}>
           <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
             <div className="flex items-center gap-2">
               <img src="/landing_img/dreamy.svg" alt="" className="h-7 w-7" />
@@ -245,7 +253,7 @@ export default function DreamyWidget() {
         </div>
       )}
 
-      <div className="fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
+      <div className={`fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6 ${sidePanelShift}`}>
         <button
           type="button"
           onClick={() => setIsOpen((v) => !v)}

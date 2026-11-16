@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import SlideInPanel from '../SlideInPanel'
 import { useAuth } from '../../context/AuthContext'
 import { useChatPanel } from '../../context/ChatPanel'
 import { useChat } from '../../hooks/useChat'
@@ -107,62 +107,14 @@ function ChatPanelBody() {
 }
 
 // App 레이아웃 오른쪽에 붙는 채팅 패널.
-// 넓은 화면에서는 페이지 옆 고정 폭 컬럼으로, 좁은 화면에서는 전체를 덮는 오버레이로 뜬다.
-const TRANSITION_MS = 350
-const EASING = 'ease-[cubic-bezier(0.16,1,0.3,1)]'
-
 export default function ChatPanel() {
   const { isOpen, close } = useChatPanel()
   const { isLoggedIn } = useAuth()
   const location = useLocation()
 
-  const shouldShow = isOpen && isLoggedIn && location.pathname !== '/chat'
-
-  // mounted: DOM에 올라가 있는지 (닫힘 애니메이션이 끝날 때까지 유지)
-  // visible: 열린 상태의 스타일을 적용할지 (마운트 다음 프레임에 true로 바꿔 transition을 건다)
-  const [mounted, setMounted] = useState(shouldShow)
-  const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    if (shouldShow) {
-      setMounted(true)
-      let raf2 = 0
-      const raf1 = requestAnimationFrame(() => {
-        raf2 = requestAnimationFrame(() => setVisible(true))
-      })
-      return () => {
-        cancelAnimationFrame(raf1)
-        cancelAnimationFrame(raf2)
-      }
-    }
-
-    setVisible(false)
-    const timer = window.setTimeout(() => setMounted(false), TRANSITION_MS)
-    return () => window.clearTimeout(timer)
-  }, [shouldShow])
-
-  if (!mounted) return null
-
   return (
-    <>
-      {/* 좁은 화면용 배경 */}
-      <div
-        className={`fixed inset-0 z-[55] bg-black/20 transition-opacity duration-[350ms] ${EASING} lg:hidden ${
-          visible ? 'opacity-100' : 'opacity-0'
-        }`}
-        onClick={close}
-      />
-      <aside
-        aria-label="채팅"
-        className={`fixed inset-y-0 right-0 z-[60] w-full max-w-[400px] shadow-xl shadow-black/10 transition-transform duration-[350ms] will-change-transform ${EASING} lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:max-w-none lg:shrink-0 lg:translate-x-0 lg:overflow-hidden lg:shadow-none lg:transition-[width] ${
-          visible ? 'translate-x-0 lg:w-[400px]' : 'translate-x-full lg:w-0'
-        }`}
-      >
-        {/* 폭이 줄어드는 동안 내용이 찌그러지지 않도록 안쪽은 고정 폭으로 둔다 */}
-        <div className="h-full w-full border-l border-slate-200 lg:w-[400px]">
-          <ChatPanelBody />
-        </div>
-      </aside>
-    </>
+    <SlideInPanel open={isOpen && isLoggedIn && location.pathname !== '/chat'} onClose={close} label="채팅">
+      <ChatPanelBody />
+    </SlideInPanel>
   )
 }

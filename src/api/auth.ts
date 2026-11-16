@@ -81,7 +81,12 @@ export async function signUp(payload: SignUpPayload) {
   return result.data
 }
 
-export async function loginWithEmail(email: string, password: string) {
+// keepLoggedIn=false면 토큰을 sessionStorage에 저장해 브라우저를 닫으면 로그아웃된다.
+export async function loginWithEmail(
+  email: string,
+  password: string,
+  options: { keepLoggedIn?: boolean } = {},
+) {
   const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -94,7 +99,7 @@ export async function loginWithEmail(email: string, password: string) {
     throw new Error(result.message || `로그인 실패: ${response.status}`)
   }
 
-  saveTokens(result.data.accessToken, result.data.refreshToken)
+  saveTokens(result.data.accessToken, result.data.refreshToken, options.keepLoggedIn ?? true)
 
   return result.data
 }

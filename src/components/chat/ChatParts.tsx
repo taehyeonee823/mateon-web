@@ -44,6 +44,9 @@ export function isSameDay(a: string, b: string): boolean {
   )
 }
 
+// 입력창이 자동으로 커질 수 있는 최대 높이(px). 대략 6~7줄.
+const MAX_COMPOSER_HEIGHT = 160
+
 /* ── 조각 컴포넌트 ─────────────────────────────────────────── */
 
 export function RoomAvatar({ src, className = 'h-11 w-11' }: { src?: string | null; className?: string }) {
@@ -188,6 +191,18 @@ export function Composer({
 }) {
   const [draft, setDraft] = useState('')
   const [isComposing, setIsComposing] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // 입력 내용에 맞춰 높이를 늘린다 (최대 MAX_COMPOSER_HEIGHT까지, 그 뒤로는 내부 스크롤).
+  // footer가 flex 컬럼의 맨 아래라 입력창이 커지면 메시지 영역이 줄며 위로 자라는 모양이 된다.
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    const next = Math.min(el.scrollHeight, MAX_COMPOSER_HEIGHT)
+    el.style.height = `${next}px`
+    el.style.overflowY = el.scrollHeight > MAX_COMPOSER_HEIGHT ? 'auto' : 'hidden'
+  }, [draft])
 
   const handleSend = () => {
     if (onSend(draft)) setDraft('')
@@ -196,6 +211,7 @@ export function Composer({
   return (
     <div className={`flex items-end ${compact ? 'gap-2' : 'gap-3 max-lg:gap-2'}`}>
       <textarea
+        ref={textareaRef}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onCompositionStart={() => setIsComposing(true)}
