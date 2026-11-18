@@ -103,7 +103,7 @@ export default function WhyMateOn() {
   }, [])
 
   return (
-    <section ref={sectionRef} className="bg-[#F1F6FE] px-6 py-32">
+    <section ref={sectionRef} className="px-6 py-32">
       <h2
         ref={titleRef}
         className="mx-auto max-w-3xl text-center text-4xl font-bold leading-tight text-white sm:text-6xl"

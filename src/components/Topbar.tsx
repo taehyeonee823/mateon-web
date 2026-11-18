@@ -60,7 +60,8 @@ function useSlideDrawer() {
   return { isOpen, isVisible, open, close }
 }
 
-export default function Topbar() {
+// transparent: 랜딩처럼 페이지 배경(빛번짐)이 탑바 뒤까지 이어져 보여야 할 때 켠다.
+export default function Topbar({ transparent = false }: { transparent?: boolean } = {}) {
   const { isLoggedIn, profile, logout } = useAuth()
   const { active: activePanel, open: openPanel, toggle: togglePanel } = useSidePanel()
   const { grouped: groupedNotifications, hasUnread } = useNotifications()
@@ -130,15 +131,15 @@ export default function Topbar() {
   return (
     <>
     {/* @container: 뷰포트가 아니라 헤더 자신의 폭 기준으로 단계가 바뀐다 (채팅/알림 패널이 열려 좁아져도 대응) */}
-    <header className="@container border-b border-slate-100 bg-white">
+    <header className={`@container border-b ${transparent ? 'border-transparent bg-transparent' : 'border-slate-100 bg-white'}`}>
     <div className="mx-auto flex h-[72px] max-w-[1160px] items-center justify-between gap-4 px-4 sm:px-6 @tablet:gap-6">
-      <div className="flex h-full min-w-0 items-center gap-6 @desktop:gap-10">
+      <div className="flex h-full min-w-0 items-center gap-4 @tablet:gap-6 @desktop:gap-10">
         <Link to="/" aria-label="MateOn 홈" className="flex shrink-0 items-center">
           <img src="/landing_img/logo.svg" alt="" className="h-8 w-auto" />
         </Link>
 
-        {/* 메인 탭 — 폰 폭에서는 메뉴 드로어 안으로 들어간다 */}
-        <nav className="hidden h-full items-center gap-5 @tablet:flex @desktop:gap-8">
+        {/* 메인 탭 — 어떤 폭에서도 항상 보인다. 좁을수록 글자와 간격만 줄인다 */}
+        <nav className="flex h-full items-center gap-3 text-sm @tablet:gap-5 @tablet:text-base @desktop:gap-8">
           {NAV_TABS.map((tab) => {
             const active = location.pathname.startsWith(tab.match ?? tab.path)
             return (
@@ -146,7 +147,7 @@ export default function Topbar() {
                 key={tab.path}
                 to={tab.path}
                 aria-current={active ? 'page' : undefined}
-                className={`flex h-full items-center whitespace-nowrap border-b-2 px-1 text-base font-semibold transition-colors ${
+                className={`flex h-full items-center whitespace-nowrap border-b-2 px-1 font-semibold transition-colors ${
                   active ? 'border-[#3F4FDB] text-[#3F4FDB]' : 'border-transparent text-black hover:text-[#3F4FDB]'
                 }`}
               >
@@ -305,40 +306,20 @@ export default function Topbar() {
             </button>
           </div>
 
+          {/* 계정 관련 항목만. 탭은 탑바에 항상 보이고 알림은 🔔이 있으니 여기엔 두지 않는다 */}
           <div className="flex-1 overflow-y-auto p-3">
-            <nav className="flex flex-col gap-0.5">
-              {NAV_TABS.map((tab) => {
-                const active = location.pathname.startsWith(tab.match ?? tab.path)
-                return (
-                  <Link
-                    key={tab.path}
-                    to={tab.path}
-                    onClick={menuDrawer.close}
-                    aria-current={active ? 'page' : undefined}
-                    className={`${menuItemClass} ${active ? 'bg-brand-50 text-[#3F4FDB]' : ''}`}
-                  >
-                    {tab.label}
-                  </Link>
-                )
-              })}
-            </nav>
-
-            <div className="my-3 h-px bg-brand-100" />
-
             <div className="flex flex-col gap-0.5">
-              <button type="button" onClick={handleChatClick} className={menuItemClass}>
+              {isLoggedIn && profile && (
+                <Link to="/my" onClick={menuDrawer.close} className={menuItemClass}>
+                  <img src="/landing_img/myPage/user.svg" alt="" className="h-5 w-5" />
+                  마이페이지
+                </Link>
+              )}
+              {/* 폰 폭에서는 탑바에 💬이 안 들어가서 여기가 유일한 채팅 진입점. 그 이상 폭에서는 숨긴다 */}
+              <button type="button" onClick={handleChatClick} className={`${menuItemClass} md:hidden`}>
                 <ChatIcon className="h-5 w-5" />
                 채팅
               </button>
-              {isLoggedIn && (
-                <button type="button" onClick={handleNotificationClick} className={menuItemClass}>
-                  <span className="relative flex h-5 w-5 items-center justify-center">
-                    <img src="/noti/notification_line.svg" alt="" className="h-5 w-5" />
-                    {hasUnread && <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-rose-500" />}
-                  </span>
-                  알림
-                </button>
-              )}
             </div>
           </div>
 

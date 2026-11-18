@@ -9,7 +9,7 @@ export default function AwardCTA() {
   const textRef = useRef<HTMLHeadingElement>(null)
 
   return (
-    <section className="flex min-h-[70vh] flex-col items-center justify-center gap-10 bg-white px-6 py-28 text-center">
+    <section className="flex min-h-[70vh] flex-col items-center justify-center gap-10 px-6 py-28 text-center">
       <img
         ref={imageRef}
         src="/landing_img/dreamyAward.png"

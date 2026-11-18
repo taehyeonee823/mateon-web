@@ -28,6 +28,9 @@ export type UserProfile = {
   collaborationTemperature: number | null
   collaborationReviewCount: number
   participatedActivities: ParticipatedActivity[]
+  // 팀 추천 시 프로필/포트폴리오를 쓸지 (오래된 계정은 내려오지 않을 수 있어 optional)
+  matchIncludeProfile?: boolean
+  matchIncludePortfolio?: boolean
 }
 
 export async function getMyProfile() {
@@ -64,7 +67,33 @@ export type UpdateProfilePayload = {
   profileImageUrl?: string | null
   tagline?: string | null
   portfolio?: string | null
+  campus?: string | null
+  grade?: string | null
+  matchIncludeProfile?: boolean
+  matchIncludePortfolio?: boolean
   verificationToken?: string
+}
+
+// PUT /api/users/me가 빠진 필드를 유지한다는 보장이 없어서, 한두 필드만 바꿀 때도
+// 현재 프로필 값을 전부 실어 보낸다. 바꿀 필드만 spread로 덮어쓰면 된다.
+export function profileToUpdatePayload(profile: UserProfile): UpdateProfilePayload {
+  return {
+    name: profile.name,
+    college: profile.college ?? '',
+    major: profile.major ?? '',
+    interestJobPrimary: profile.interestJobPrimary ?? '',
+    interestJobSecondary: profile.interestJobSecondary ?? '',
+    interestJobTertiary: profile.interestJobTertiary ?? '',
+    schoolEmail: profile.schoolEmail,
+    schoolVerified: profile.schoolVerified,
+    profileImageUrl: profile.profileImageUrl,
+    tagline: profile.tagline,
+    portfolio: profile.portfolio,
+    campus: profile.campus,
+    grade: profile.grade,
+    matchIncludeProfile: profile.matchIncludeProfile ?? true,
+    matchIncludePortfolio: profile.matchIncludePortfolio ?? true,
+  }
 }
 
 export async function updateProfile(payload: UpdateProfilePayload) {

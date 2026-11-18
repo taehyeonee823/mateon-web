@@ -64,7 +64,7 @@ export default function HowItWorks() {
   }, [])
 
   return (
-    <section ref={sectionRef} className="bg-[#F1F6FE] px-6 py-24">
+    <section ref={sectionRef} className="px-6 py-24">
       <div className="mx-auto max-w-5xl text-center">
         <span className="text-base font-medium text-brand-500">How it works</span>
         <h2 ref={titleRef} className="mt-3 text-3xl font-bold leading-normal text-black sm:text-5xl">
