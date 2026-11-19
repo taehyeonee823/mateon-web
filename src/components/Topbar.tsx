@@ -9,7 +9,7 @@ import { useSidePanel } from '../context/SidePanel'
 const NAV_TABS = [
   { label: '공모전', path: '/contest' },
   { label: '대외활동', path: '/external' },
-  { label: '팀 빌딩', path: '/teams/new', match: '/teams' },
+  { label: '팀 빌딩', path: '/team-building', match: '/team-building' },
 ]
 
 function MenuIcon({ className = '' }: { className?: string }) {
