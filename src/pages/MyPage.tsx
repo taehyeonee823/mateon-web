@@ -93,10 +93,6 @@ export default function MyPage() {
     navigate('/')
   }
 
-  const handleWithdraw = () => {
-    window.alert('아직 준비 중인 기능이에요.')
-  }
-
   if (!isLoggedIn || !profile) {
     return (
       <div className="min-h-screen bg-white">
@@ -210,25 +206,12 @@ export default function MyPage() {
 
                     <div className="my-1 border-t border-brand-100" />
 
-                    <button
-                      type="button"
-                      disabled={profile.schoolVerified}
-                      onClick={() => window.alert('준비 중인 기능이에요.')}
-                      className={menuItemClass}
-                    >
-                      <span className="text-brand-900">학교 인증</span>
-                      {profile.schoolVerified && (
-                        <span className="text-xs font-semibold text-emerald-600">인증 완료됨</span>
-                      )}
-                    </button>
-                    <button type="button" onClick={() => navigate('/pwchange')} className={menuItemClass}>
-                      <span className="text-brand-900">비밀번호 변경</span>
+                    {/* 학교 인증 · 비밀번호 변경 · 회원 탈퇴는 계정 설정 페이지로 모았다 */}
+                    <button type="button" onClick={() => navigate('/my/settings')} className={menuItemClass}>
+                      <span className="text-brand-900">계정 설정</span>
                     </button>
                     <button type="button" onClick={handleLogout} className={menuItemClass}>
                       <span className="text-rose-500">로그아웃</span>
-                    </button>
-                    <button type="button" onClick={handleWithdraw} className={menuItemClass}>
-                      <span className="text-brand-300">회원 탈퇴</span>
                     </button>
                   </div>
                 )}

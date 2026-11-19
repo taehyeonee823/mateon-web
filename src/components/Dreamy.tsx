@@ -45,7 +45,7 @@ export default function Dreamy() {
   }, [])
 
   return (
-    <section className="flex min-h-[70vh] flex-col items-center justify-center gap-10 bg-[#F1F6FE] px-6 py-28 text-center">
+    <section className="flex min-h-[70vh] flex-col items-center justify-center gap-10 px-6 py-28 text-center">
       <img ref={imageRef} src="/landing_img/dreamy.svg" alt="AI 드림이" className="w-64 sm:w-80" />
 
       <h2 ref={textRef} className="text-4xl font-bold leading-tight text-black sm:text-5xl">

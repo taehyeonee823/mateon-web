@@ -51,7 +51,7 @@ export default function DeadlineEvents() {
   }
 
   return (
-    <section className="bg-white px-6 py-12">
+    <section className="px-6 py-12">
       <div className="mx-auto max-w-6xl">
         <div className="text-center">
           <h1 className="mt-3 text-3xl font-bold text-black sm:text-4xl">마감 임박 활동</h1>

@@ -8,6 +8,7 @@ import MyPage from './pages/MyPage'
 import MyApplications from './pages/MyApplications'
 import MyTeams from './pages/MyTeams'
 import MyBookmarks from './pages/MyBookmarks'
+import AccountSettings from './pages/AccountSettings'
 import TeamReview from './pages/TeamReview'
 import PasswordChange from './pages/PasswordChange'
 import EditProfile from './pages/EditProfile'
@@ -48,6 +49,7 @@ function App() {
       <Route path="/my/teams/:id/edit" element={<TeamEdit />} />
       <Route path="/my/bookmarks" element={<MyBookmarks />} />
       <Route path="/my/review" element={<TeamReview />} />
+      <Route path="/my/settings" element={<AccountSettings />} />
       <Route path="/pwchange" element={<PasswordChange />} />
       <Route path="/editprofile" element={<EditProfile />} />
 
