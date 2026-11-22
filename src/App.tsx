@@ -26,7 +26,6 @@ import TeamDetail from './pages/TeamDetail'
 import TeamEdit from './pages/TeamEdit'
 import ChatPanel from './components/chat/ChatPanel'
 import NotificationPanel from './components/NotificationPanel'
-import TeamBuilding from './pages/TeamBuilding'
 import { SidePanelProvider } from './context/SidePanel'
 import { NotificationsProvider } from './context/Notifications'
 
@@ -77,11 +76,7 @@ function App() {
         <Route path="/external" element={<External />} />
         <Route path="/external/new" element={<CreateContest category="EXTERNAL" />} />
         <Route path="/external/:id" element={<ContestDetail />} />
-<<<<<<< HEAD
-        <Route path="/team-building" element={<TeamBuilding />} />
-=======
         <Route path="/teams" element={<Teams />} />
->>>>>>> refactor/team-building-page
 
         {/* 2. 팀 생성 관련 페이지들만 CreateTeamProvider로 한 번 더 감싸줍니다 */}
         <Route 
