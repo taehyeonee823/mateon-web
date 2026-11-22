@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { ChevronRightIcon } from '../components/icons'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { searchEvents, type EventItem } from '../api/event'
-import { useCreateTeamStore } from '../context/CreateTeam' 
+import { useCreateTeamStore } from '../context/CreateTeam'
 
 const steps = ['팀 기본 정보', '모집 포지션', '미리보기']
 
@@ -15,7 +14,7 @@ export default function CreateTeamInfo() {
     promotionText,
     recruitmentStartDate,
     recruitmentEndDate,
-    setField
+    setField,
   } = useCreateTeamStore()
 
   const [searchKeyword, setSearchKeyword] = useState('')
@@ -35,15 +34,13 @@ export default function CreateTeamInfo() {
       ? '마감일은 시작일보다 이후여야 해요'
       : ''
 
-  
   const handleSearch = async () => {
     if (!searchKeyword.trim()) return
 
     setIsSearching(true)
     setShowResults(true)
     try {
-      const results = await searchEvents({ keyword: searchKeyword })
-      setSearchResults(results)
+      setSearchResults(await searchEvents({ keyword: searchKeyword }))
     } catch (error) {
       console.error('공모전 검색 실패:', error)
       alert('검색 중 오류가 발생했습니다.')
@@ -52,7 +49,6 @@ export default function CreateTeamInfo() {
     }
   }
 
-  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -60,217 +56,234 @@ export default function CreateTeamInfo() {
     }
   }
 
-  
   const handleSelectEvent = (event: EventItem) => {
     setSelectedEvent(event)
-    setField('eventId', event.id) 
+    setField('eventId', event.id)
     setShowResults(false)
-    setSearchKeyword('') 
+    setSearchKeyword('')
   }
 
-  
-  const handleNextStep = () => {
-    navigate('/teams/new/position')
-  }
+  const inputClassName =
+    'h-12 w-full rounded-lg border border-[#E1E2EA] bg-white px-4 text-sm text-[#1B1B33] placeholder:text-[#B4B5C6] focus:border-[#4D4DF1] focus:outline-none'
 
   return (
-    <div className="min-h-screen bg-white flex">
-      <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 min-h-0 overflow-y-auto">
-          <div className="mx-auto max-w-5xl px-6 pb-10 pt-4">
-            <h1 className="text-2xl font-extrabold text-neutral-900 mb-1">팀 만들기</h1>
-            <p className="text-sm text-neutral-500 mb-6">공모전/대외활동을 함께할 팀원을 모집해보세요!</p>
+    <div className="min-h-full bg-[#F7F7F9]">
+      <div className="mx-auto max-w-[1200px] px-4 py-12 sm:px-6 lg:py-16">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_232px] lg:gap-[72px]">
+          <div className="min-w-0">
+            <header>
+              <h1 className="text-[32px] font-extrabold tracking-tight text-[#1B1B33]">팀 만들기</h1>
+              <p className="mt-3 text-base text-[#1B1B33]">
+                공모전/대외활동을 함께할 팀원을 모집해보세요.
+              </p>
+            </header>
 
-            {/* Stepper */}
-            <div className="flex items-center mb-8">
-              {steps.map((s, i) => {
-                const stepNum = i + 1
-                const active = stepNum === 1
+            <ol className="mt-10 flex items-center gap-4 sm:gap-6">
+              {steps.map((stepLabel, index) => {
+                const stepNumber = index + 1
+                const isCurrent = stepNumber === 1
                 return (
-                  <div key={s} className="flex items-center flex-1 last:flex-none">
-                    <div className="flex items-center gap-2 shrink-0">
+                  <li key={stepLabel} className={`flex items-center gap-4 sm:gap-6 ${index < steps.length - 1 ? 'flex-1' : ''}`}>
+                    <div className="flex shrink-0 items-center gap-2.5">
                       <span
-                        className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                          active ? 'bg-[#4D4DF1] text-white' : 'bg-neutral-100 text-neutral-400'
+                        className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                          isCurrent
+                            ? 'bg-[#4D4DF1] text-white'
+                            : 'border-[1.5px] border-[#C9CAD6] bg-white text-[#A3A4B8]'
                         }`}
                       >
-                        {stepNum}
+                        {stepNumber}
                       </span>
-                      <span className={`text-sm ${active ? 'font-bold text-neutral-900' : 'text-neutral-400'}`}>
-                        {s}
+                      <span className={`text-sm ${isCurrent ? 'font-bold text-[#1B1B33]' : 'text-[#A3A4B8]'}`}>
+                        {stepLabel}
                       </span>
                     </div>
-                    {i < steps.length - 1 && <div className="flex-1 h-px bg-neutral-100 mx-3" />}
-                  </div>
+                    {index < steps.length - 1 && <span className="h-0.5 flex-1 rounded-full bg-[#E1E2EA]" />}
+                  </li>
                 )
               })}
-            </div>
+            </ol>
 
-            {/* 01. 공모전 선택 영역 */}
-            <section className="rounded-2xl border border-neutral-100 p-6 mb-6">
-              <h2 className="text-base font-bold text-neutral-900 mb-4">
-                <span className="text-[#4D4DF1]">01.</span> 어떤 공모전/활동 팀인가요?
-              </h2>
-              <label className="block text-sm font-semibold text-neutral-700 mb-2">
-                공모전/대외활동 선택 <span className="text-neutral-400 font-normal">(선택)</span>
-              </label>
+            <section className="mt-8 rounded-2xl border border-[#E8E8EF] bg-white p-6 sm:p-12">
+              <h2 className="text-2xl font-bold text-[#1B1B33]">어떤 활동인가요?</h2>
 
-              {/* 검색창 */}
-              <div className="flex gap-2 mb-4 relative">
-                <div className="relative flex-1">
-                  <input
-                    value={searchKeyword}
-                    onChange={(e) => {
-                      setSearchKeyword(e.target.value)
-                      if (!e.target.value) setShowResults(false)
+              {selectedEvent ? (
+                <div className="mt-6 flex items-center gap-4 rounded-xl bg-[#F5F5F9] p-4">
+                  <div className="h-20 w-16 shrink-0 overflow-hidden rounded-md border border-[#E8E8EF] bg-white">
+                    {selectedEvent.imageUrl ? (
+                      <img src={selectedEvent.imageUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="block h-full w-full bg-[#EEF0FC]" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-[#1B1B33]">{selectedEvent.title}</p>
+                    {selectedEvent.organizer && (
+                      <p className="mt-1 text-xs text-[#6F7095]">{selectedEvent.organizer}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedEvent(null)
+                      setField('eventId', null)
                     }}
-                    onKeyDown={handleKeyDown}
-                    placeholder="참여할 공모전 또는 대외활동을 검색하고 선택하세요"
-                    className="w-full rounded-xl border border-neutral-200 pl-4 pr-4 py-3 text-sm outline-none focus:border-[#4D4DF1]"
-                  />
-
-                  {/* 검색 결과 드롭다운 */}
+                    className="h-12 shrink-0 rounded-lg border border-[#E1E2EA] bg-white px-5 text-sm font-semibold text-[#1B1B33] hover:bg-[#F5F5F9]"
+                  >
+                    변경
+                  </button>
+                </div>
+              ) : (
+                <div className="relative mt-6">
+                  <div className="flex gap-3">
+                    <input
+                      value={searchKeyword}
+                      onChange={(e) => {
+                        setSearchKeyword(e.target.value)
+                        if (!e.target.value) setShowResults(false)
+                      }}
+                      onKeyDown={handleKeyDown}
+                      placeholder="참여할 공모전 또는 대외활동을 검색하세요"
+                      className={inputClassName}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSearch}
+                      className="h-12 rounded-lg bg-[#4D4DF1] px-6 text-sm font-semibold text-white hover:bg-[#3D3DD9]"
+                    >
+                      검색
+                    </button>
+                  </div>
                   {showResults && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-200 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto">
+                    <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-lg border border-[#E1E2EA] bg-white py-1 shadow-lg">
                       {isSearching ? (
-                        <div className="p-4 text-center text-sm text-neutral-500">검색 중...</div>
+                        <div className="p-4 text-center text-sm text-[#6F7095]">검색 중...</div>
                       ) : searchResults.length > 0 ? (
                         searchResults.map((event) => (
-                          <div
+                          <button
+                            type="button"
                             key={event.id}
                             onClick={() => handleSelectEvent(event)}
-                            className="p-3 hover:bg-neutral-50 cursor-pointer border-b border-neutral-100 last:border-0"
+                            className="w-full px-4 py-2.5 text-left hover:bg-[#F5F5F9]"
                           >
-                            <p className="font-bold text-sm text-neutral-900 truncate">{event.title}</p>
-                            <p className="text-xs text-neutral-500 mt-1">
-                              주최 {event.organizer} · 마감일 {event.endDate}
-                            </p>
-                          </div>
+                            <p className="truncate text-sm font-medium text-[#1B1B33]">{event.title}</p>
+                            <p className="mt-0.5 text-xs text-[#6F7095]">주최 {event.organizer} · 마감일 {event.endDate}</p>
+                          </button>
                         ))
                       ) : (
-                        <div className="p-4 text-center text-sm text-neutral-500">검색 결과가 없습니다.</div>
+                        <div className="p-4 text-center text-sm text-[#6F7095]">검색 결과가 없습니다.</div>
                       )}
                     </div>
                   )}
                 </div>
+              )}
+
+              <div className="mt-10 flex flex-col gap-7 border-t border-[#F0F0F5] pt-10">
+                <h2 className="text-2xl font-bold text-[#1B1B33]">팀을 소개해 주세요</h2>
+
+                <div>
+                  <label htmlFor="team-title" className="text-[15px] font-semibold text-[#1B1B33]">
+                    팀 이름<span className="ml-0.5 text-[#FF5A5A]">*</span>
+                  </label>
+                  <div className="relative mt-2.5">
+                    <input
+                      id="team-title"
+                      value={title}
+                      maxLength={30}
+                      onChange={(e) => setField('title', e.target.value)}
+                      placeholder="예: 코드램프, 아이디어 윙스"
+                      className={`${inputClassName} pr-14`}
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-[#A3A4B8]">{title.length}/30</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="team-promotion" className="text-[15px] font-semibold text-[#1B1B33]">모집글</label>
+                  <div className="relative mt-2.5">
+                    <textarea
+                      id="team-promotion"
+                      value={promotionText}
+                      maxLength={60}
+                      onChange={(e) => setField('promotionText', e.target.value)}
+                      placeholder="어떤 팀인지 소개해주세요"
+                      rows={3}
+                      className="h-[82px] w-full resize-y rounded-lg border border-[#E1E2EA] px-4 py-3 text-sm text-[#1B1B33] placeholder:text-[#B4B5C6] focus:border-[#4D4DF1] focus:outline-none"
+                    />
+                    <span className="absolute bottom-3 right-4 text-xs text-[#A3A4B8]">{promotionText.length}/60</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-10 flex flex-col gap-7 border-t border-[#F0F0F5] pt-10">
+                <h2 className="text-2xl font-bold text-[#1B1B33]">기간</h2>
+                <div className="flex items-end gap-3 sm:gap-6">
+                  <div className="min-w-0 flex-1">
+                    <label htmlFor="team-start-date" className="text-[15px] font-semibold text-[#1B1B33]">
+                      시작일<span className="ml-0.5 text-[#FF5A5A]">*</span>
+                    </label>
+                    <input
+                      id="team-start-date"
+                      type="date"
+                      value={recruitmentStartDate}
+                      onChange={(e) => setField('recruitmentStartDate', e.target.value)}
+                      className={`${inputClassName} mt-2.5`}
+                    />
+                  </div>
+                  <span className="mb-3.5 h-5 shrink-0 text-[#B4B5C6]">~</span>
+                  <div className="min-w-0 flex-1">
+                    <label htmlFor="team-end-date" className="text-[15px] font-semibold text-[#1B1B33]">
+                      마감일<span className="ml-0.5 text-[#FF5A5A]">*</span>
+                    </label>
+                    <input
+                      id="team-end-date"
+                      type="date"
+                      value={recruitmentEndDate}
+                      min={recruitmentStartDate || undefined}
+                      onChange={(e) => setField('recruitmentEndDate', e.target.value)}
+                      className={`${inputClassName} mt-2.5 ${dateError ? 'border-red-300' : ''}`}
+                    />
+                  </div>
+                </div>
+                {dateError && <p className="-mt-4 text-sm font-medium text-rose-500">{dateError}</p>}
+              </div>
+
+              <div className="mt-8">
                 <button
-                  onClick={handleSearch}
-                  className="rounded-xl bg-neutral-900 px-5 text-sm font-medium text-white hover:bg-neutral-800"
+                  type="button"
+                  disabled={!!dateError || !title || !recruitmentStartDate || !recruitmentEndDate}
+                  onClick={() => navigate('/teams/new/position')}
+                  className="h-12 w-full rounded-lg bg-[#4D4DF1] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#3D3DD9] disabled:cursor-not-allowed disabled:bg-[#E8E8EE] disabled:text-[#A3A4B8]"
                 >
-                  검색
+                  다음
                 </button>
               </div>
-
-              {/* 선택된 공모전 카드 */}
-              {selectedEvent && (
-                <div className="flex items-center gap-4 rounded-xl border border-[#4D4DF1] bg-[#EEF0FF]/30 p-4">
-                  <div className="h-16 w-20 shrink-0 rounded-lg bg-white border border-neutral-100 flex items-center justify-center overflow-hidden">
-                    {selectedEvent.imageUrl ? (
-                      <img src={selectedEvent.imageUrl} alt="공모전 썸네일" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-neutral-300 text-xs">NO IMG</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {selectedEvent.fieldLabel && (
-                      <span className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600 mb-1.5">
-                        {selectedEvent.fieldLabel}
-                      </span>
-                    )}
-                    <p className="font-bold text-neutral-900 truncate">{selectedEvent.title}</p>
-                    <p className="text-xs text-neutral-500 mt-1">
-                      주최 {selectedEvent.organizer} · 마감 {selectedEvent.endDate}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSelectedEvent(null)
-                      setField('eventId', null) 
-                    }}
-                    className="text-sm font-medium text-neutral-400 hover:text-neutral-600 px-2"
-                  >
-                    취소
-                  </button>
-                </div>
-              )}
             </section>
-
-            {/* 02. 팀 기본 정보 */}
-            <section className="rounded-2xl border border-neutral-100 p-6">
-              <h2 className="text-base font-bold text-neutral-900 mb-5">
-                <span className="text-[#4D4DF1]">02.</span> 팀 기본 정보를 입력해주세요
-              </h2>
-
-              <div className="mb-5">
-                <label className="block text-sm font-semibold text-neutral-700 mb-2">제목</label>
-                <div className="relative">
-                  <input
-                    value={title} 
-                    maxLength={30}
-                    onChange={(e) => setField('title', e.target.value)} 
-                    placeholder="예) 코드램프, 아이디어 윙스 등"
-                    className="w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-[#4D4DF1]"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-neutral-400">
-                    {title.length}/30
-                  </span>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-neutral-700 mb-2">진행 방식 및 한 줄 소개</label>
-                <div className="relative">
-                  <textarea
-                    value={promotionText} 
-                    maxLength={60}
-                    onChange={(e) => setField('promotionText', e.target.value)} 
-                    placeholder="어떤 팀인지 한줄로 소개해주세요!"
-                    rows={2}
-                    className="w-full resize-none rounded-xl border border-neutral-200 px-4 py-3 text-sm outline-none focus:border-[#4D4DF1]"
-                  />
-                  <span className="absolute right-4 bottom-3 text-xs text-neutral-400">{promotionText.length}/60</span>
-                </div>
-              </div>           
-
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-neutral-700 mb-3">모집 기간</label>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs text-neutral-500 mb-1.5">모집 시작일</label>
-                    <input
-                      type="date"
-                      value={recruitmentStartDate} 
-                      onChange={(e) => setField('recruitmentStartDate', e.target.value)} 
-                      className="w-full rounded-xl border border-neutral-200 px-4 py-3 text-sm text-neutral-700 outline-none focus:border-[#4D4DF1]"
-                    />
-                  </div>
-                  <span className="mt-6 text-neutral-300">~</span>
-                  <div className="flex-1">
-                    <label className="block text-xs text-neutral-500 mb-1.5">모집 마감일</label>
-                    <input
-                      type="date"
-                      value={recruitmentEndDate} 
-                      min={recruitmentStartDate || undefined}
-                      onChange={(e) => setField('recruitmentEndDate', e.target.value)} 
-                      className={`w-full rounded-xl border px-4 py-3 text-sm text-neutral-700 outline-none focus:border-[#4D4DF1] ${
-                        dateError ? 'border-red-300' : 'border-neutral-200'
-                      }`}
-                    />
-                  </div>
-                </div>
-                {dateError && <p className="mt-2 text-xs text-red-500">{dateError}</p>}
-              </div>
-            </section>
-
-            <button
-              disabled={!!dateError || !title || !recruitmentStartDate || !recruitmentEndDate}
-              onClick={handleNextStep}
-              className="mt-6 w-full rounded-xl bg-[#4D4DF1] py-3.5 text-sm font-bold text-white hover:bg-[#3d3de0] flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              다음으로 <ChevronRightIcon className="h-4 w-4" />
-            </button>
           </div>
-        </main>
+
+          <aside className="lg:pt-[196px]">
+            <div className="rounded-2xl border border-[#E8E8EF] bg-white p-6 lg:sticky lg:top-6">
+              <h3 className="text-[15px] font-bold text-[#1B1B33]">만들기 전에 알아두세요</h3>
+              <ol className="mt-5 flex flex-col gap-6">
+                {[
+                  ['활동 하나를 선택하세요', '공모전 또는 대외활동을 선택하면 팀 모집과 함께 표시돼요.'],
+                  ['모집 기간을 정하세요', '시작일과 마감일은 팀 모집글에 표시돼요.'],
+                  ['다음은 모집 포지션이에요', '어떤 역할과 인원을 모집할지 정해요.'],
+                ].map(([tipTitle, description], index) => (
+                  <li key={tipTitle} className="flex gap-3">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EEF0FC] text-xs font-semibold text-[#4D4DF1]">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold text-[#1B1B33]">{tipTitle}</p>
+                      <p className="mt-1.5 text-xs leading-relaxed text-[#6F7095]">{description}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   )

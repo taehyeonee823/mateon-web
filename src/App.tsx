@@ -21,7 +21,7 @@ import Chat from './pages/Chat'
 import CreateTeamInfo from './pages/CreateTeamInfo'
 import CreateTeamPosition from './pages/CreateTeamPosition'
 import CreateTeamPreview from './pages/CreateTeamPreview'
-import DreamyWidget from './components/DreamyWidget'
+import Teams from './pages/Teams'
 import TeamDetail from './pages/TeamDetail'
 import TeamEdit from './pages/TeamEdit'
 import ChatPanel from './components/chat/ChatPanel'
@@ -76,6 +76,7 @@ function App() {
         <Route path="/external" element={<External />} />
         <Route path="/external/new" element={<CreateContest category="EXTERNAL" />} />
         <Route path="/external/:id" element={<ContestDetail />} />
+        <Route path="/teams" element={<Teams />} />
 
         {/* 2. 팀 생성 관련 페이지들만 CreateTeamProvider로 한 번 더 감싸줍니다 */}
         <Route 
@@ -95,7 +96,6 @@ function App() {
     <ChatPanel />
     <NotificationPanel />
     </div>
-    <DreamyWidget />
     </NotificationsProvider>
     </SidePanelProvider>
   )
