@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, type FormEvent } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import SignupWelcome from '../components/SignupWelcome'
@@ -7,6 +7,7 @@ import { requestEmailCode, verifyEmailCode, signUp } from '../api/auth'
 import { getUnivByEmail } from '../lib/univ'
 import { redirectToKakaoLogin } from '../lib/kakao'
 import { useAuth } from '../context/AuthContext'
+import { rememberTeamCreateEvent, type TeamCreateLoginState } from '../utils/teamCreateLogin'
 
 const RESEND_COOLDOWN_SECONDS = 60
 const TRACKS = [
@@ -29,7 +30,9 @@ const SIGNUP_STEPS: { key: Step; label: string }[] = [
 
 export default function Signup() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { refresh } = useAuth()
+  const teamCreateLogin = location.state as TeamCreateLoginState | null
   const [step, setStep] = useState<Step>('welcome')
 
   // step 1: credentials
@@ -122,6 +125,9 @@ export default function Signup() {
   const handleKakaoLogin = () => {
     setKakaoError(null)
     try {
+      rememberTeamCreateEvent(
+        teamCreateLogin?.returnTo === '/teams/new' ? teamCreateLogin.event : undefined,
+      )
       redirectToKakaoLogin(`${window.location.origin}/oauth/kakao/callback`)
     } catch (err) {
       setKakaoError(err instanceof Error ? err.message : '잠시 후 다시 시도해주세요.')
@@ -451,7 +457,16 @@ export default function Signup() {
 
               <button
                 type="button"
-                onClick={() => navigate('/')}
+                onClick={() => {
+                  if (teamCreateLogin?.returnTo === '/teams/new') {
+                    navigate('/teams/new', {
+                      replace: true,
+                      state: teamCreateLogin.event ? { event: teamCreateLogin.event } : undefined,
+                    })
+                  } else {
+                    navigate('/', { replace: true })
+                  }
+                }}
                 className="mt-10 h-14 w-full rounded-xl bg-[#2554F0] text-lg font-semibold text-white"
               >
                 시작하기
