@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { loginWithEmail } from '../api/auth'
 import { redirectToKakaoLogin } from '../lib/kakao'
 import { useAuth } from '../context/AuthContext'
+import { rememberTeamCreateEvent, type TeamCreateLoginState } from '../utils/teamCreateLogin'
 
 function EyeIcon({ off = false, className = '' }: { off?: boolean; className?: string }) {
   return (
@@ -16,7 +17,9 @@ function EyeIcon({ off = false, className = '' }: { off?: boolean; className?: s
 
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { refresh } = useAuth()
+  const teamCreateLogin = location.state as TeamCreateLoginState | null
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -38,7 +41,14 @@ export default function Login() {
     try {
       await loginWithEmail(email, password, { keepLoggedIn })
       await refresh()
-      navigate('/')
+      if (teamCreateLogin?.returnTo === '/teams/new') {
+        navigate('/teams/new', {
+          replace: true,
+          state: teamCreateLogin.event ? { event: teamCreateLogin.event } : undefined,
+        })
+      } else {
+        navigate('/', { replace: true })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '잠시 후 다시 시도해주세요.')
     } finally {
@@ -49,6 +59,9 @@ export default function Login() {
   const handleKakaoLogin = () => {
     setError(null)
     try {
+      rememberTeamCreateEvent(
+        teamCreateLogin?.returnTo === '/teams/new' ? teamCreateLogin.event : undefined,
+      )
       redirectToKakaoLogin(`${window.location.origin}/oauth/kakao/callback`)
     } catch (err) {
       setError(err instanceof Error ? err.message : '잠시 후 다시 시도해주세요.')
@@ -154,7 +167,11 @@ export default function Login() {
 
       <p className="mt-10 flex items-center gap-2 text-sm text-[#45465C]">
         아직 계정이 없나요?
-        <Link to="/signup" className="font-medium text-[#4D4DF1] underline underline-offset-2 hover:text-[#3D3DD9]">
+        <Link
+          to="/signup"
+          state={location.state}
+          className="font-medium text-[#4D4DF1] underline underline-offset-2 hover:text-[#3D3DD9]"
+        >
           회원가입 하기
         </Link>
       </p>

@@ -138,30 +138,33 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
           <img src="/landing_img/logo.svg" alt="" className="h-8 w-auto" />
         </Link>
 
-        {/* 메인 탭 — 어떤 폭에서도 항상 보인다. 좁을수록 글자와 간격만 줄인다 */}
-        <nav className="flex h-full items-center gap-3 text-sm @tablet:gap-5 @tablet:text-base @desktop:gap-8">
-          {NAV_TABS.map((tab) => {
-            const active = location.pathname.startsWith(tab.match ?? tab.path)
-            return (
-              <Link
-                key={tab.path}
-                to={tab.path}
-                aria-current={active ? 'page' : undefined}
-                className={`flex h-full items-center whitespace-nowrap border-b-2 px-1 font-semibold transition-colors ${
-                  active ? 'border-[#3F4FDB] text-[#3F4FDB]' : 'border-transparent text-black hover:text-[#3F4FDB]'
-                }`}
-              >
-                {tab.label}
-              </Link>
-            )
-          })}
-        </nav>
+        {/* 메인 탭은 로그인한 사용자에게만 노출 */}
+        {isLoggedIn && (
+          <nav className="flex h-full items-center gap-3 text-sm @tablet:gap-5 @tablet:text-base @desktop:gap-8">
+            {NAV_TABS.map((tab) => {
+              const active = location.pathname.startsWith(tab.match ?? tab.path)
+              return (
+                <Link
+                  key={tab.path}
+                  to={tab.path}
+                  aria-current={active ? 'page' : undefined}
+                  className={`flex h-full items-center whitespace-nowrap border-b-2 px-1 font-semibold transition-colors ${
+                    active ? 'border-[#3F4FDB] text-[#3F4FDB]' : 'border-transparent text-black hover:text-[#3F4FDB]'
+                  }`}
+                >
+                  {tab.label}
+                </Link>
+              )
+            })}
+          </nav>
+        )}
       </div>
 
       <div className="flex shrink-0 items-center justify-end gap-2 @tablet:gap-3 @desktop:gap-6">
         {/* 알림 — 폰 폭에서는 로그인했을 때만 노출. 누르면 오른쪽 알림 패널이 열린다 */}
+        {isLoggedIn && (
         <div
-          className={`relative shrink-0 ${isLoggedIn ? '' : 'hidden @tablet:block'}`}
+          className="relative shrink-0"
           onMouseEnter={() => setIsBellHovered(true)}
           onMouseLeave={() => setIsBellHovered(false)}
         >
@@ -207,9 +210,10 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
             </div>
           )}
         </div>
+        )}
 
         {/* 태블릿 이상: 채팅 */}
-        <button
+        {isLoggedIn && <button
           type="button"
           onClick={handleChatClick}
           aria-label="채팅"
@@ -217,10 +221,14 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
           className={`hidden @tablet:flex ${iconButtonClass(isChatPanelOpen)}`}
         >
           <ChatIcon className="h-6 w-6" />
-        </button>
+        </button>}
 
-        {/* PC 전용: 내 정보 · 로그아웃 / 로그인 · 가입 */}
-        <div className="hidden items-center gap-6 @desktop:flex">
+        {/* 로그인 사용자는 PC에서 계정 정보, 비로그인 사용자는 모든 폭에서 로그인·가입 */}
+        <div
+          className={`${
+            isLoggedIn ? 'hidden @desktop:flex' : 'flex'
+          } items-center gap-2 @desktop:gap-6`}
+        >
           {isLoggedIn && profile ? (
             <>
               <Link to="/my" aria-label="마이페이지" className="flex shrink-0 items-center gap-2 rounded-full transition-opacity hover:opacity-80">
@@ -241,14 +249,14 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
             <>
               <Link
                 to="/login"
-                className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
+                className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-3 py-2 text-xs font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white @desktop:px-4 @desktop:text-sm"
               >
                 로그인
               </Link>
 
               <Link
                 to="/signup"
-                className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-4 py-2 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white"
+                className="flex shrink-0 items-center gap-2 rounded-full bg-[#4D4DF1] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#3D3DD9] @desktop:px-4 @desktop:text-sm"
               >
                 무료로 시작하기
               </Link>
@@ -257,7 +265,7 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
         </div>
 
         {/* PC 미만: 메뉴 버튼 */}
-        <button
+        {isLoggedIn && <button
           type="button"
           onClick={menuDrawer.open}
           aria-label="메뉴 열기"
@@ -265,7 +273,7 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
           className="flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-brand-50 @desktop:hidden"
         >
           <MenuIcon className="h-6 w-6" />
-        </button>
+        </button>}
       </div>
     </div>
     </header>
