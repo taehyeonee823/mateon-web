@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react'
+import type { EventItem } from '../api/event'
 
 type CreateTeamState = {
   eventId: number | null
+  selectedEvent: EventItem | null
   title: string
   promotionText: string
   recruitmentStartDate: string
@@ -20,6 +22,7 @@ type CreateTeamContextType = CreateTeamState & {
 
 const initialState: CreateTeamState = {
   eventId: null,
+  selectedEvent: null,
   title: '',
   promotionText: '',
   recruitmentStartDate: '',
