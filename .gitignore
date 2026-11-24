@@ -8,3 +8,5 @@ dist-ssr
 
 .DS_Store
 .vercel
+.env
+.continue/

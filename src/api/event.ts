@@ -67,6 +67,8 @@ export type EventItem = {
   category: EventCategory;
   field: EventField | null;
   fieldLabel: string | null;
+  // 클라이언트에서 동일 공모전을 묶을 때 채우는 합쳐진 분야 목록 (백엔드 응답에는 없음)
+  fieldLabels?: string[];
   organizer: string;
   description: string | null;
   summarizedDescription: string | null;

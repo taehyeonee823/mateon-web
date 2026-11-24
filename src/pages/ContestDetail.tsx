@@ -7,6 +7,7 @@ import { getTeams } from '../api/team'
 import type { TeamPost } from '../types/team'
 import { useAuth } from '../context/AuthContext'
 import { dDayInfo } from '../utils/dday'
+import { getFieldLabels, groupDuplicateEvents, isSameEvent, mergeSameEventFields } from '../utils/eventGroup'
 import {
   fetchEventDetail,
   bookmarkEvent,
@@ -203,8 +204,8 @@ export default function ContestDetailPage() {
       .then((items) => {
         const today = todayString()
         setSimilarEvents(
-          items
-            .filter((item) => item.id !== event.id && item.endDate >= today)
+          groupDuplicateEvents(items)
+            .filter((item) => item.id !== event.id && !isSameEvent(item, event) && item.endDate >= today)
             .sort((a, b) => a.endDate.localeCompare(b.endDate))
             .slice(0, 4),
         )
@@ -214,6 +215,24 @@ export default function ContestDetailPage() {
       })
       .finally(() => {
         if (!controller.signal.aborted) setSimilarLoading(false)
+      })
+
+    return () => controller.abort()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id])
+
+  // 분야만 다른 동일 공모전이 따로 등록돼 있으면 제목으로 찾아서 분야를 합친다.
+  // (목록에서 넘어온 경우는 이미 합쳐져 있고, URL 직접 진입 시에는 단일 항목만 있기 때문)
+  useEffect(() => {
+    if (!event) return
+
+    const controller = new AbortController()
+    searchEvents({ category: event.category, keyword: event.title, size: 50 }, controller.signal)
+      .then((items) => {
+        setEvent((prev) => (prev && prev.id === event.id ? mergeSameEventFields(prev, items) : prev))
+      })
+      .catch(() => {
+        // 분야 병합은 부가 기능이라 실패해도 기존 분야만 보여준다.
       })
 
     return () => controller.abort()
@@ -297,6 +316,7 @@ export default function ContestDetailPage() {
   }
 
   const showImage = event.imageUrl && !imageError
+  const fieldLabels = getFieldLabels(event)
   const eventName = event.category === 'EXTERNAL' ? '대외활동' : '공모전'
 
   const infoItems = [
@@ -330,6 +350,18 @@ export default function ContestDetailPage() {
               <ClockIcon className="h-3 w-3" />
               {d?.label}
             </span>
+            {fieldLabels.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {fieldLabels.map((label) => (
+                  <span
+                    key={label}
+                    className="rounded bg-[#EEF1FD] px-2 py-0.5 text-xs font-semibold text-[#3F4FDB]"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            )}
             <h1 className="mt-4 text-[26px] font-bold leading-snug tracking-tight text-[#1B1B33] sm:text-[36px]">
               {event.title}
             </h1>
@@ -504,7 +536,7 @@ export default function ContestDetailPage() {
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" />
-                    {label}
+               {label}
                   </button>
                 ))}
               </div>

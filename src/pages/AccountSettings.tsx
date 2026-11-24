@@ -4,7 +4,6 @@ import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import { useAuth } from '../context/AuthContext'
 import { profileToUpdatePayload, updateProfile } from '../api/user'
-import { getUnivByEmail } from '../utils/univ'
 
 // 알림 설정은 아직 백엔드 API가 없어서 브라우저(localStorage)에 사용자별로 저장한다.
 // 서버 저장이 생기면 load/save만 API 호출로 바꾸면 된다.
@@ -58,14 +57,6 @@ const NOTIFY_ITEMS: { key: keyof NotifySettings; title: string; description: str
   { key: 'notifyTeamReview', title: '팀원 평가', description: '활동이 끝난 팀의 팀원 평가 요청이 왔을 때' },
 ]
 
-function CheckIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="m5 12 5 5 9-10" />
-    </svg>
-  )
-}
-
 function Switch({
   checked,
   onChange,
@@ -90,7 +81,7 @@ function Switch({
       }`}
     >
       <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+        className={`absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
           checked ? 'translate-x-[18px]' : 'translate-x-0.5'
         }`}
       />
@@ -199,13 +190,11 @@ export default function AccountSettings() {
     )
   }
 
-  const univ = profile.schoolVerified ? getUnivByEmail(profile.schoolEmail ?? profile.email) : null
-
   return (
     <div className="min-h-screen bg-white">
       <Topbar />
 
-      <main className="mx-auto w-full max-w-[460px] px-6 pb-24 pt-16">
+      <main className="mx-auto w-full max-w-[600px] px-6 pb-24 pt-16">
         <h1 className="text-2xl font-bold text-[#1B1B33]">계정 설정</h1>
 
         <div className="mt-8">
@@ -220,39 +209,6 @@ export default function AccountSettings() {
                 </button>
               }
             />
-          </Section>
-
-          <Section title="학교 인증">
-            {profile.schoolVerified ? (
-              <div className="flex items-center gap-3 rounded-lg bg-[#EEF9F1] px-4 py-3.5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2DB55D] text-white">
-                  <CheckIcon className="h-4 w-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-[#1B1B33]">인증 완료</p>
-                  <p className="mt-0.5 truncate text-xs text-[#6F7095]">
-                    인증된 학교: {univ ?? profile.schoolEmail ?? '-'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={notReady}
-                  className="shrink-0 text-xs font-medium text-[#4D4DF1] underline underline-offset-2"
-                >
-                  다시 인증
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 rounded-lg bg-[#F5F5F9] px-4 py-3.5">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-[#1B1B33]">아직 인증하지 않았어요</p>
-                  <p className="mt-0.5 text-xs text-[#6F7095]">학교 이메일로 재학생 인증을 하면 학교가 프로필에 표시돼요.</p>
-                </div>
-                <button type="button" onClick={notReady} className={smallButtonClass}>
-                  인증하기
-                </button>
-              </div>
-            )}
           </Section>
 
           <Section title="맞춤 추천" description="팀을 추천받을 때 어떤 정보를 쓸지 골라요">

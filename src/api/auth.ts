@@ -1,4 +1,5 @@
 import { saveTokens } from './tokenStorage'
+import type { ConsentPayload } from '../lib/consent'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
@@ -61,7 +62,7 @@ export type SignUpPayload = {
   interestJobSecondary: string
   interestJobTertiary: string
   tagline: string | null
-}
+} & ConsentPayload
 
 export async function signUp(payload: SignUpPayload) {
   const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
@@ -104,11 +105,12 @@ export async function loginWithEmail(
   return result.data
 }
 
-export async function loginWithKakao(kakaoAccessToken: string) {
+// consent: 회원가입 화면에서 동의한 경우에만 전달. 신규 회원 생성 시 백엔드가 저장한다.
+export async function loginWithKakao(kakaoAccessToken: string, consent?: ConsentPayload | null) {
   const response = await fetch(`${API_BASE_URL}/api/auth/social/kakao`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ accessToken: kakaoAccessToken }),
+    body: JSON.stringify({ accessToken: kakaoAccessToken, ...(consent ?? {}) }),
   })
 
   const result: ApiResponse<AuthTokens> = await response.json()

@@ -11,6 +11,11 @@ const SIZE = 320
 const CENTER = SIZE / 2
 const PLOT_RADIUS = CENTER - 24
 
+// EventCard와 동일하게 카테고리에 따라 상세 경로를 결정한다.
+function detailPathOf(p: SimilarityMapPoint): string {
+  return `${p.category === 'EXTERNAL' ? '/external' : '/contest'}/${p.id}`
+}
+
 function colorForPercentile(rankPercentile: number): string {
   if (rankPercentile <= 0.1) return '#4D4DF1'
   if (rankPercentile <= 0.3) return '#7A7AF5'
@@ -132,7 +137,7 @@ export default function SimilarityMap({ eventId }: { eventId: number }) {
                 }}
                 onMouseEnter={() => setHovered(p)}
                 onMouseLeave={() => setHovered(null)}
-                onClick={() => navigate(`/contests/${p.id}`)}
+                onClick={() => navigate(detailPathOf(p))}
               />
             )
           })}
@@ -160,7 +165,7 @@ export default function SimilarityMap({ eventId }: { eventId: number }) {
           <button
             key={p.id}
             type="button"
-            onClick={() => navigate(`/contests/${p.id}`)}
+            onClick={() => navigate(detailPathOf(p))}
             className="flex items-center gap-3 rounded-xl border border-[#ECECF5] bg-white p-3 text-left transition-all hover:border-[#4D4DF1]/40 hover:shadow-sm"
             style={{
               opacity: mounted ? 1 : 0,

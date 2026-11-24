@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import { loginWithKakao } from '../api/auth'
+import { clearSignupConsent, isRequiredConsentGiven, readSignupConsent } from '../lib/consent'
 import { useAuth } from '../context/AuthContext'
 
 const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY as string | undefined
@@ -53,10 +54,16 @@ export default function KakaoCallback() {
     }
 
     const redirectUri = `${window.location.origin}/oauth/kakao/callback`
+    // 회원가입 화면에서 동의하고 넘어온 경우에만 동의 내역이 존재한다.
+    const storedConsent = readSignupConsent()
+    const consent = isRequiredConsentGiven(storedConsent) ? storedConsent : null
 
     exchangeCodeForKakaoAccessToken(code, redirectUri)
-      .then((kakaoAccessToken) => loginWithKakao(kakaoAccessToken))
-      .then(() => refresh())
+      .then((kakaoAccessToken) => loginWithKakao(kakaoAccessToken, consent))
+      .then(() => {
+        clearSignupConsent()
+        return refresh()
+      })
       .then(() => navigate('/'))
       .catch((err) => {
         setError(err instanceof Error ? err.message : '잠시 후 다시 시도해주세요.')

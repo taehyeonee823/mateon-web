@@ -33,16 +33,6 @@ function CameraIcon({ className = '' }: { className?: string }) {
   )
 }
 
-function CapIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M2.5 9.5 12 5l9.5 4.5L12 14z" />
-      <path d="M6.5 11.5v4.5c0 1.5 2.5 3 5.5 3s5.5-1.5 5.5-3v-4.5" />
-      <path d="M21.5 9.5v5" />
-    </svg>
-  )
-}
-
 function CheckIcon({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
@@ -64,6 +54,9 @@ function Field({ label, htmlFor, children }: { label: string; htmlFor?: string; 
 
 const inputClass =
   'h-11 w-full rounded-lg border border-[#E1E2EA] bg-white px-3.5 text-sm text-[#1B1B33] placeholder:text-[#B4B5C6] focus:border-[#4D4DF1] focus:outline-none disabled:bg-[#F5F5F9]'
+
+const smallButtonClass =
+  'h-7 shrink-0 rounded-md border border-[#D5D6E0] bg-white px-2.5 text-[11px] font-medium text-[#1B1B33] transition-colors hover:bg-[#F5F5F9]'
 
 export default function EditProfile() {
   const navigate = useNavigate()
@@ -97,6 +90,8 @@ export default function EditProfile() {
 
   const univ = profile?.schoolVerified ? getUnivByEmail(profile.schoolEmail ?? profile.email) : null
   const isComplete = !!(name.trim() && track && major.trim() && jobs.every((j) => j.trim()))
+
+  const notReady = () => window.alert('아직 준비 중인 기능이에요.')
 
   const setJob = (index: number, value: string) =>
     setJobs((prev) => prev.map((j, i) => (i === index ? value : j)))
@@ -272,28 +267,36 @@ export default function EditProfile() {
           {/* 학교 · 계열 · 학과 */}
           <section className="mt-8 border-t border-[#ECECF2] pt-8">
             <p className="text-sm font-semibold text-[#1B1B33]">학교</p>
-            <div className="mt-2 flex items-center gap-3 rounded-lg border border-[#E1E2EA] bg-[#F8F8FB] px-4 py-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#45465C]">
-                <CapIcon className="h-4.5 w-4.5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-[#1B1B33]">
-                  {univ ?? (profile.schoolVerified ? profile.schoolEmail : '학교 미인증')}
-                </p>
-                <p className="mt-0.5 text-[11px] text-[#8B8CA3]">
-                  {profile.schoolVerified ? '학교 인증으로 확인된 학교예요' : '계정 설정에서 학교 이메일로 인증할 수 있어요'}
-                </p>
+            {profile.schoolVerified ? (
+              <div className="flex items-center gap-3 rounded-lg bg-[#EEF9F1] px-4 py-3.5">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2DB55D] text-white">
+                  <CheckIcon className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-[#1B1B33]">인증 완료</p>
+                  <p className="mt-0.5 truncate text-xs text-[#6F7095]">
+                    인증된 학교: {univ ?? profile.schoolEmail ?? '-'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={notReady}
+                  className="shrink-0 text-xs font-medium text-[#4D4DF1] underline underline-offset-2"
+                >
+                  다시 인증
+                </button>
               </div>
-              {profile.schoolVerified ? (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[#E6F6EC] px-2 py-1 text-[11px] font-semibold text-[#1E9E52]">
-                  <CheckIcon className="h-3 w-3" /> 인증됨
-                </span>
-              ) : (
-                <span className="inline-flex shrink-0 items-center rounded-md bg-[#F0F0F5] px-2 py-1 text-[11px] font-semibold text-[#8B8CA3]">
-                  미인증
-                </span>
-              )}
-            </div>
+            ) : (
+              <div className="flex items-center gap-3 rounded-lg bg-[#F5F5F9] px-4 py-3.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-[#1B1B33]">아직 인증하지 않았어요</p>
+                  <p className="mt-0.5 text-xs text-[#6F7095]">학교 이메일로 재학생 인증을 하면 학교가 프로필에 표시돼요.</p>
+                </div>
+                <button type="button" onClick={notReady} className={smallButtonClass}>
+                  인증하기
+                </button>
+              </div>
+            )}
 
             <div className="mt-6 grid grid-cols-2 gap-3">
               <Field label="계열" htmlFor="profile-track">

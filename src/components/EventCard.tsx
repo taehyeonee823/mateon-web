@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ClockIcon, BookmarkIcon } from './icons'
 import { dDayInfo } from '../utils/dday'
 import type { EventItem } from '../api/event'
+import { getFieldLabels } from '../utils/eventGroup'
 
 export default function EventCard({
   event,
@@ -42,6 +43,8 @@ export default function EventCard({
   }
 
   const showImage = event.imageUrl && !imageError
+  const fieldLabels = getFieldLabels(event)
+  const badgeLabels = fieldLabels.length > 0 ? fieldLabels : ['기타']
 
   return (
     <Link
@@ -87,9 +90,16 @@ export default function EventCard({
 
       {/* Body */}
       <div className="flex flex-1 flex-col px-3.5 pb-3.5 pt-4">
-        <span className="self-start rounded bg-[#EEF1FD] px-1.5 py-0.5 text-[11px] font-semibold text-[#3F4FDB]">
-          {event.fieldLabel ?? '기타'}
-        </span>
+        <div className="flex flex-wrap gap-1">
+          {badgeLabels.map((label) => (
+            <span
+              key={label}
+              className="rounded bg-[#EEF1FD] px-1.5 py-0.5 text-[11px] font-semibold text-[#3F4FDB]"
+            >
+              {label}
+            </span>
+          ))}
+        </div>
         <h3 className="mt-2 line-clamp-2 text-[15px] font-bold leading-snug text-black group-hover:text-[#3F4FDB]">
           {event.title}
         </h3>

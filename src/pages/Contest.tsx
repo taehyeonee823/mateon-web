@@ -6,6 +6,7 @@ import Pagination from '../components/Pagination'
 import { ChevronDownIcon, ChevronRightIcon, SearchIcon } from '../components/icons'
 import { searchAllEvents, bookmarkEvent, unbookmarkEvent, EVENT_FIELD_LABELS, type EventItem } from '../api/event'
 import { dDayInfo, isWithinPeriod, type PeriodFilter, type PeriodPreset } from '../utils/dday'
+import { getFieldLabels, groupDuplicateEvents } from '../utils/eventGroup'
 
 /* ────────────────────────────────────────────────────────────────
  * Constants
@@ -141,7 +142,9 @@ export default function ContestPage() {
         : `${periodFilter.start.slice(5).replace('-', '.')}~${periodFilter.end.slice(5).replace('-', '.')}`
 
   const filtered = useMemo(() => {
-    let list = activeCategory === '전체' ? events : events.filter((e) => e.fieldLabel === activeCategory)
+    // 분야만 다른 동일 공모전은 하나로 합치고(분야는 fieldLabels로 병합), 그 뒤에 분야 필터를 적용한다.
+    let list = groupDuplicateEvents(events)
+    if (activeCategory !== '전체') list = list.filter((e) => getFieldLabels(e).includes(activeCategory))
     list = list.filter((e) => !dDayInfo(e.endDate).closed) // 마감된 공모전 제외
     list = list.filter((e) => isWithinPeriod(e.endDate, periodFilter))
     return sortByDeadline ? [...list].sort((a, b) => a.endDate.localeCompare(b.endDate)) : list

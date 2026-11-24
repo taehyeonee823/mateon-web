@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import EventCard from './EventCard'
 import { searchAllEvents, bookmarkEvent, unbookmarkEvent, type EventItem } from '../api/event'
 import { dDayInfo } from '../utils/dday'
+import { groupDuplicateEvents } from '../utils/eventGroup'
 
 const VISIBLE_COUNT = 6
 
@@ -19,7 +20,8 @@ export default function DeadlineEvents() {
     searchAllEvents({}, controller.signal)
       .then((list) =>
         setEvents(
-          list
+          // 분야만 다른 동일 활동은 하나로 합친 뒤(분야는 fieldLabels로 병합), 마감일 순으로 자른다
+          groupDuplicateEvents(list)
             .filter((e) => !dDayInfo(e.endDate).closed)
             .sort((a, b) => a.endDate.localeCompare(b.endDate))
             .slice(0, VISIBLE_COUNT),

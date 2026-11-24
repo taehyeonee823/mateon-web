@@ -1,14 +1,24 @@
-import { Fragment, useEffect, useState, type FormEvent } from 'react'
+import { Fragment, useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Topbar from '../components/Topbar'
 import Footer from '../components/Footer'
 import SignupWelcome from '../components/SignupWelcome'
+import PrivacyConsentModal from '../components/PrivacyConsentModal'
+import {
+  clearSignupConsent,
+  saveSignupConsent,
+  toConsentPayload,
+  type ConsentPayload,
+  type ConsentResult,
+} from '../lib/consent'
 import { requestEmailCode, verifyEmailCode, signUp } from '../api/auth'
 import { getUnivByEmail } from '../lib/univ'
 import { redirectToKakaoLogin } from '../lib/kakao'
 import { useAuth } from '../context/AuthContext'
 
 const RESEND_COOLDOWN_SECONDS = 60
+
+type SignupMethod = 'kakao' | 'email'
 const TRACKS = [
   '인문과학계열',
   '사회과학계열',
@@ -45,6 +55,10 @@ export default function Signup() {
   const [verificationToken, setVerificationToken] = useState<string | null>(null)
   const [codeError, setCodeError] = useState<string | null>(null)
   const [kakaoError, setKakaoError] = useState<string | null>(null)
+
+  // 약관 동의
+  const [pendingMethod, setPendingMethod] = useState<SignupMethod | null>(null)
+  const [consent, setConsent] = useState<ConsentPayload | null>(null)
 
   // step 2: info
   const [name, setName] = useState('')
@@ -128,9 +142,36 @@ export default function Signup() {
     }
   }
 
+  // 가입 방법 선택 시 동의 여부부터 확인
+  const requestSignup = (method: SignupMethod) => {
+    if (consent) {
+      if (method === 'kakao') handleKakaoLogin()
+      else setStep('credentials')
+      return
+    }
+    setPendingMethod(method)
+  }
+
+  const closeConsentModal = useCallback(() => setPendingMethod(null), [])
+
+  const handleConsentConfirm = (result: ConsentResult) => {
+    const method = pendingMethod
+    const payload = toConsentPayload(result)
+    setConsent(payload)
+    setPendingMethod(null)
+    // 카카오 리다이렉트 후 콜백 페이지에서 참조
+    saveSignupConsent(payload)
+    if (method === 'kakao') handleKakaoLogin()
+    else if (method === 'email') setStep('credentials')
+  }
+
   const handleInfoSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!isInfoComplete || isSubmitting || !verificationToken) return
+    if (!consent) {
+      setSubmitError('약관 동의가 필요합니다. 처음 화면에서 다시 진행해주세요.')
+      return
+    }
 
     setSubmitError(null)
     setIsSubmitting(true)
@@ -151,7 +192,9 @@ export default function Signup() {
         interestJobSecondary: job2,
         interestJobTertiary: job3,
         tagline: null,
+        ...consent,
       })
+      clearSignupConsent()
       await refresh()
       setStep('complete')
     } catch (err) {
@@ -163,7 +206,18 @@ export default function Signup() {
 
   if (step === 'welcome') {
     return (
-      <SignupWelcome onKakao={handleKakaoLogin} onEmail={() => setStep('credentials')} error={kakaoError} />
+      <>
+        <SignupWelcome
+          onKakao={() => requestSignup('kakao')}
+          onEmail={() => requestSignup('email')}
+          error={kakaoError}
+        />
+        <PrivacyConsentModal
+          open={pendingMethod !== null}
+          onClose={closeConsentModal}
+          onConfirm={handleConsentConfirm}
+        />
+      </>
     )
   }
 
