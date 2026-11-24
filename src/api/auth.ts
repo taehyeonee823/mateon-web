@@ -1,7 +1,6 @@
+import { requestJson } from '../lib/apiClient'
 import { saveTokens } from './tokenStorage'
 import type { ConsentPayload } from '../lib/consent'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export type ApiResponse<T> = {
   success: boolean
@@ -14,36 +13,32 @@ type AuthTokens = {
   refreshToken: string
 }
 
-export async function requestEmailCode(email: string) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/email/request`, {
+async function postPublic<T>(path: string, body: unknown, fallbackMessage: string): Promise<T> {
+  const result = await requestJson<T>(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    json: body,
+    auth: 'none',
+    fallbackMessage,
   })
 
-  const result: ApiResponse<null> = await response.json()
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || `이메일 인증코드 발송 실패: ${response.status}`)
+  if (!result.success) {
+    throw new Error(result.message || fallbackMessage)
   }
 
-  return result
+  return result.data as T
+}
+
+export async function requestEmailCode(email: string) {
+  await postPublic<null>('/api/auth/email/request', { email }, '이메일 인증코드 발송 실패')
 }
 
 export async function verifyEmailCode(email: string, code: string) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/email/verify`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, code }),
-  })
-
-  const result: ApiResponse<{ verificationToken: string }> = await response.json()
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || `이메일 인증코드 검증 실패: ${response.status}`)
-  }
-
-  return result.data.verificationToken
+  const data = await postPublic<{ verificationToken: string }>(
+    '/api/auth/email/verify',
+    { email, code },
+    '이메일 인증코드 검증 실패',
+  )
+  return data.verificationToken
 }
 
 export type SignUpPayload = {
@@ -65,21 +60,9 @@ export type SignUpPayload = {
 } & ConsentPayload
 
 export async function signUp(payload: SignUpPayload) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-
-  const result: ApiResponse<AuthTokens> = await response.json()
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || `회원가입 실패: ${response.status}`)
-  }
-
-  saveTokens(result.data.accessToken, result.data.refreshToken)
-
-  return result.data
+  const data = await postPublic<AuthTokens>('/api/auth/signup', payload, '회원가입 실패')
+  saveTokens(data.accessToken, data.refreshToken)
+  return data
 }
 
 // keepLoggedIn=false면 토큰을 sessionStorage에 저장해 브라우저를 닫으면 로그아웃된다.
@@ -88,38 +71,22 @@ export async function loginWithEmail(
   password: string,
   options: { keepLoggedIn?: boolean } = {},
 ) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  })
-
-  const result: ApiResponse<AuthTokens> = await response.json()
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || `로그인 실패: ${response.status}`)
-  }
-
-  saveTokens(result.data.accessToken, result.data.refreshToken, options.keepLoggedIn ?? true)
-
-  return result.data
+  const data = await postPublic<AuthTokens>(
+    '/api/auth/login',
+    { email, password },
+    '로그인 실패',
+  )
+  saveTokens(data.accessToken, data.refreshToken, options.keepLoggedIn ?? true)
+  return data
 }
 
 // consent: 회원가입 화면에서 동의한 경우에만 전달. 신규 회원 생성 시 백엔드가 저장한다.
 export async function loginWithKakao(kakaoAccessToken: string, consent?: ConsentPayload | null) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/social/kakao`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ accessToken: kakaoAccessToken, ...(consent ?? {}) }),
-  })
-
-  const result: ApiResponse<AuthTokens> = await response.json()
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || `카카오 로그인 실패: ${response.status}`)
-  }
-
-  saveTokens(result.data.accessToken, result.data.refreshToken)
-
-  return result.data
+  const data = await postPublic<AuthTokens>(
+    '/api/auth/social/kakao',
+    { accessToken: kakaoAccessToken, ...(consent ?? {}) },
+    '카카오 로그인 실패',
+  )
+  saveTokens(data.accessToken, data.refreshToken)
+  return data
 }

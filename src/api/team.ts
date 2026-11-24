@@ -1,5 +1,5 @@
 import type { ApiResponse } from "./auth";
-import { getAccessToken } from "./tokenStorage";
+import { requestJson, type JsonResult } from "../lib/apiClient";
 import { TeamDetail, TeamPost, TeamRequestPayload } from "../types/team";
 import { 
   MatchingIntentRequiredError, 
@@ -11,8 +11,6 @@ import {
  } from "../lib/error";
 import { Application } from "../types/team";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-
 export type TeamApplicationRequest = {
   introduction?: string;
   message: string;
@@ -20,69 +18,46 @@ export type TeamApplicationRequest = {
   portfolioUrl?: string;
 };
 
+function throwTeamError(result: JsonResult<unknown>): never {
+  const message = result.message;
+  if (result.status === 400 && (message.includes('MATCHING_INTENT_REQUIRED') || message.includes('매칭 의도'))) {
+    throw new MatchingIntentRequiredError(message);
+  }
+  if (
+    result.status === 404 &&
+    (message.includes('RECOMMENDATION_NOT_FOUND') || message.includes('RESOURCE_NOT_FOUND'))
+  ) {
+    throw new ProposalNotFoundError(message);
+  }
+  if (result.status === 502 || result.status === 503 || message.includes('AI_SERVER')) {
+    throw new AiServerError(message);
+  }
+  if (result.status === 400 && message.includes('OFFER_ALREADY_RESPONDED')) {
+    throw new OfferAlreadyRespondedError(message);
+  }
+  if (result.status === 400 && message.includes('SCHOOL_NOT_VERIFIED')) {
+    throw new SchoolNotVerifiedError(message);
+  }
+  if (result.status === 400 && message.includes('TEAM_RECRUITMENT_CLOSED')) {
+    throw new TeamRecruitmentClosedError(message);
+  }
+  if (result.status === 403 && message.includes('FORBIDDEN_ACCESS')) {
+    throw new OfferForbiddenError(message);
+  }
+  throw new Error(message);
+}
 
 async function authenticatedFetch<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: { method?: string; json?: unknown } = {}
 ): Promise<ApiResponse<T>> {
-  const accessToken = await getAccessToken();
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.');
-  }
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+  const result = await requestJson<T>(endpoint, {
+    method: options.method,
+    json: options.json,
+    fallbackMessage: '요청 실패',
   });
-
-  const text = await response.text();
-  let result: ApiResponse<T> | null = null;
-
-  if (text) {
-    try {
-      result = JSON.parse(text);
-    } catch {
-      // JSON 파싱 실패 시 (502 HTML 에러 등)
-      throw new Error(`서버 응답 오류가 발생했습니다. (${response.status})`);
-    }
-  }
-
-  if (!response.ok || !result?.success) {
-    const message = result?.message || `요청 실패: ${response.status}`;
-
-    // 커스텀 에러 분류
-    if (response.status === 400 && (message.includes('MATCHING_INTENT_REQUIRED') || message.includes('매칭 의도'))) {
-      throw new MatchingIntentRequiredError(message);
-    }
-    if (
-      response.status === 404 &&
-      (message.includes('RECOMMENDATION_NOT_FOUND') || message.includes('RESOURCE_NOT_FOUND'))
-    ) {
-      throw new ProposalNotFoundError(message);
-    }
-    if (response.status === 502 || response.status === 503 || message.includes('AI_SERVER')) {
-      throw new AiServerError(message);
-    }
-    // 역제안 관련 에러 분류
-    if (response.status === 400 && message.includes('OFFER_ALREADY_RESPONDED')) {
-      throw new OfferAlreadyRespondedError(message);
-    }
-    if (response.status === 400 && message.includes('SCHOOL_NOT_VERIFIED')) {
-      throw new SchoolNotVerifiedError(message);
-    }
-    if (response.status === 400 && message.includes('TEAM_RECRUITMENT_CLOSED')) {
-      throw new TeamRecruitmentClosedError(message);
-    }
-    if (response.status === 403 && message.includes('FORBIDDEN_ACCESS')) {
-      throw new OfferForbiddenError(message);
-    }
-    throw new Error(message);
-  }
-  return result;
+  if (!result.success) throwTeamError(result);
+  return { success: true, message: result.message, data: result.data as T };
 }
 
 export class SchoolNotVerifiedError extends Error {
@@ -110,82 +85,35 @@ export class ForbiddenAccessError extends Error {
 
 // 1. 팀 모집글 상세 조회
 export async function getTeamDetail(teamId: number) {
-  const accessToken = await getAccessToken();
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/teams/${teamId}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const result = await requestJson<TeamDetail>(`/api/teams/${teamId}`, {
+    fallbackMessage: '팀 상세 조회 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<TeamDetail> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `팀 상세 조회 실패: ${response.status}`);
-  }
-
+  if (!result.success || !result.data) throw new Error(result.message);
   return result.data;
 }
 
 
 // 2. 내가 리더로 모집한(작성한) 팀 목록 — myPosts=true로 리더 소유 게시글만 필터링
 export async function getMyTeams(signal?: AbortSignal): Promise<TeamPost[]> {
-  const accessToken = await getAccessToken();
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/teams?myPosts=true`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const result = await requestJson<TeamPost[]>('/api/teams?myPosts=true', {
     signal,
+    fallbackMessage: '모집한 팀 조회 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<TeamPost[]> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `모집한 팀 조회 실패: ${response.status}`);
-  }
-
-  console.log('[getMyTeams]', text);
-
+  if (!result.success || !result.data) throw new Error(result.message);
   return result.data;
 }
 
 // 3. 팀 모집글 작성
 export async function createTeamRecruitment(payload: TeamRequestPayload) {
-  const accessToken = await getAccessToken();
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/teams`, {
+  const result = await requestJson<TeamDetail>('/api/teams', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(payload),
+    json: payload,
+    fallbackMessage: '팀 모집글 등록 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<TeamDetail> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    const message = result?.message || `팀 모집글 등록 실패: ${response.status}`;
-
-    if (message.includes('SCHOOL_NOT_VERIFIED')) {
-      throw new SchoolNotVerifiedError(message);
-    }
-
-    throw new Error(message);
+  if (!result.success || !result.data) {
+    if (result.message.includes('SCHOOL_NOT_VERIFIED')) throw new SchoolNotVerifiedError(result.message);
+    throw new Error(result.message);
   }
-
   return result.data;
 }
 
@@ -194,67 +122,33 @@ export async function updateTeamRecruitment(
   teamId: number,
   payload: TeamRequestPayload
 ): Promise<TeamDetail> {
-  const accessToken = await getAccessToken();
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/teams/${teamId}`, {
+  const result = await requestJson<TeamDetail>(`/api/teams/${teamId}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(payload),
+    json: payload,
+    fallbackMessage: '팀 모집글 수정 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<TeamDetail> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    const message = result?.message || `팀 모집글 수정 실패: ${response.status}`;
-
-    if (response.status === 403 && message.includes('FORBIDDEN_ACCESS')) {
-      throw new ForbiddenAccessError(message);
+  if (!result.success || !result.data) {
+    if (result.status === 403 && result.message.includes('FORBIDDEN_ACCESS')) {
+      throw new ForbiddenAccessError(result.message);
     }
-    if (response.status === 404) {
-      throw new ResourceNotFoundError(message);
-    }
-
-    throw new Error(message);
+    if (result.status === 404) throw new ResourceNotFoundError(result.message);
+    throw new Error(result.message);
   }
-
   return result.data;
 }
 
 // 5. 팀 모집글 삭제
 export async function deleteTeam(teamId: number): Promise<void> {
-  const accessToken = await getAccessToken();
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/teams/${teamId}`, {
+  const result = await requestJson<null>(`/api/teams/${teamId}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    fallbackMessage: '팀 모집글 삭제 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<null> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    const message = result?.message || `팀 모집글 삭제 실패: ${response.status}`;
-
-    if (response.status === 403 && message.includes('FORBIDDEN_ACCESS')) {
-      throw new ForbiddenAccessError(message);
+  if (!result.success) {
+    if (result.status === 403 && result.message.includes('FORBIDDEN_ACCESS')) {
+      throw new ForbiddenAccessError(result.message);
     }
-    if (response.status === 404) {
-      throw new ResourceNotFoundError(message);
-    }
-
-    throw new Error(message);
+    if (result.status === 404) throw new ResourceNotFoundError(result.message);
+    throw new Error(result.message);
   }
 }
 
@@ -270,9 +164,7 @@ export async function getTeamApplications(teamId: number) {
 export async function respondToApplication(applicationId: number, isApproved: boolean) {
   const result = await authenticatedFetch<null>(
     `/api/teams/applications/${applicationId}?isApproved=${isApproved}`,
-    {
-      method: 'PATCH',
-    }
+    { method: 'PATCH' }
   );
   return result.message;
 }
@@ -287,28 +179,13 @@ export async function getTeams(
   else if (params.eventId != null) query.set('eventId', String(params.eventId));
   else if (params.category) query.set('category', params.category);
 
-  // 비로그인도 조회 가능하므로 토큰이 있을 때만 헤더에 붙임
-  const accessToken = await getAccessToken();
   const qs = query.toString();
-
-  const response = await fetch(`${API_BASE_URL}/api/teams${qs ? `?${qs}` : ''}`, {
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  const result = await requestJson<TeamPost[]>(`/api/teams${qs ? `?${qs}` : ''}`, {
+    auth: 'optional',
     signal,
+    fallbackMessage: '팀 목록 조회 실패',
   });
-
-  const text = await response.text();
-  let result: ApiResponse<TeamPost[]> | null = null;
-  if (text) {
-    try {
-      result = JSON.parse(text);
-    } catch {
-      throw new Error(`서버 응답 오류가 발생했습니다. (${response.status})`);
-    }
-  }
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `팀 목록 조회 실패: ${response.status}`);
-  }
+  if (!result.success || !result.data) throw new Error(result.message);
   return result.data;
 }
 
@@ -321,7 +198,7 @@ export async function submitTeamApplication(
     `/api/teams/${teamId}/apply`,
     {
       method: 'POST',
-      body: JSON.stringify(body),
+      json: body,
     }
   );
   return result.data;

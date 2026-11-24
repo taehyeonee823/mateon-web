@@ -28,6 +28,7 @@ import ChatPanel from './components/chat/ChatPanel'
 import NotificationPanel from './components/NotificationPanel'
 import { SidePanelProvider } from './context/SidePanel'
 import { NotificationsProvider } from './context/Notifications'
+import RequireAuth from './components/RequireAuth'
 
 function App() {
   return (
@@ -41,16 +42,17 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/oauth/kakao/callback" element={<KakaoCallback />} />
-      <Route path="/my" element={<MyPage />} />
-      <Route path="/my/applications" element={<MyApplications />} />
-      <Route path="/my/teams" element={<MyTeams />} />
-      <Route path="/my/teams/:id" element={<TeamDetail />} />
-      <Route path="/my/teams/:id/edit" element={<TeamEdit />} />
-      <Route path="/my/bookmarks" element={<MyBookmarks />} />
-      <Route path="/my/review" element={<TeamReview />} />
-      <Route path="/my/settings" element={<AccountSettings />} />
-      <Route path="/pwchange" element={<PasswordChange />} />
-      <Route path="/editprofile" element={<EditProfile />} />
+
+      <Route path="/my" element={<RequireAuth><MyPage /></RequireAuth>} />
+      <Route path="/my/applications" element={<RequireAuth><MyApplications /></RequireAuth>} />
+      <Route path="/my/teams" element={<RequireAuth><MyTeams /></RequireAuth>} />
+      <Route path="/my/teams/:id" element={<RequireAuth><TeamDetail /></RequireAuth>} />
+      <Route path="/my/teams/:id/edit" element={<RequireAuth><TeamEdit /></RequireAuth>} />
+      <Route path="/my/bookmarks" element={<RequireAuth><MyBookmarks /></RequireAuth>} />
+      <Route path="/my/review" element={<RequireAuth><TeamReview /></RequireAuth>} />
+      <Route path="/my/settings" element={<RequireAuth><AccountSettings /></RequireAuth>} />
+      <Route path="/pwchange" element={<RequireAuth><PasswordChange /></RequireAuth>} />
+      <Route path="/editprofile" element={<RequireAuth><EditProfile /></RequireAuth>} />
 
       {/* 채팅은 뷰포트 높이에 딱 맞는 자체 스크롤 레이아웃이라 풋터 없이 별도로 감싼다 */}
       <Route

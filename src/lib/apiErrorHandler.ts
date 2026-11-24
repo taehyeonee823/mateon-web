@@ -15,7 +15,9 @@ export async function safeFetch(
 ): Promise<Response> {
   try {
     return await fetch(input, init);
-  } catch {
+  } catch (err) {
+    // 요청 취소(AbortError)는 네트워크 오류가 아니므로 그대로 넘긴다
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
     // DNS 실패, 오프라인, CORS 등 - 서버에 도달조차 못한 경우
     throw new NetworkError();
   }
@@ -25,7 +27,8 @@ export async function parseApiResponse<T>(
   response: Response,
   fallbackMessage: string
 ): Promise<T> {
-  if (response.status === 403) {
+  // 401은 액세스 토큰 만료다. 403은 권한 없음이라 로그인 만료로 보지 않는다.
+  if (response.status === 401) {
     throw new UnauthorizedError();
   }
 

@@ -66,7 +66,7 @@ function ChatPanelBody() {
           title="전체 화면"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
         >
-          <ExpandIcon className="h-4.5 w-4.5" />
+          <ExpandIcon className="h-5 w-5" />
         </Link>
         <button
           type="button"

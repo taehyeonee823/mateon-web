@@ -1,24 +1,9 @@
-import type { ApiResponse } from './auth'
-import { getAccessToken } from './tokenStorage'
+import { requestJson } from '../lib/apiClient'
 import { getTeamDetail } from './team'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-
 async function authedGet<T>(path: string): Promise<T> {
-  const accessToken = getAccessToken()
-  if (!accessToken) throw new Error('로그인이 필요합니다.')
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-
-  const text = await response.text()
-  const result: ApiResponse<T> | null = text ? JSON.parse(text) : null
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `조회 실패: ${response.status}`)
-  }
-
+  const result = await requestJson<T>(path, { fallbackMessage: '조회 실패' })
+  if (!result.success || result.data == null) throw new Error(result.message)
   return result.data
 }
 
@@ -106,26 +91,13 @@ export function getMyTeams() {
 }
 
 async function authedMutate<T>(path: string, method: string, body?: unknown): Promise<T> {
-  const accessToken = getAccessToken()
-  if (!accessToken) throw new Error('로그인이 필요합니다.')
-
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const result = await requestJson<T>(path, {
     method,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    json: body,
+    fallbackMessage: '요청 실패',
   })
-
-  const text = await response.text()
-  const result: ApiResponse<T> | null = text ? JSON.parse(text) : null
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `요청 실패: ${response.status}`)
-  }
-
-  return result.data
+  if (!result.success) throw new Error(result.message)
+  return result.data as T
 }
 
 export function respondToOffer(offerId: number, accepted: boolean) {
@@ -146,24 +118,12 @@ export type TeamReviewSubmission = {
 }
 
 export async function submitTeamReviews(teamId: number, reviews: TeamReviewSubmission[]) {
-  const accessToken = getAccessToken()
-  if (!accessToken) throw new Error('로그인이 필요합니다.')
-
-  const response = await fetch(`${API_BASE_URL}/api/teams/${teamId}/reviews`, {
+  const result = await requestJson<null>(`/api/teams/${teamId}/reviews`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({ reviews }),
+    json: { reviews },
+    fallbackMessage: '평가 제출 실패',
   })
-
-  const text = await response.text()
-  const result: ApiResponse<null> | null = text ? JSON.parse(text) : null
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `평가 제출 실패: ${response.status}`)
-  }
+  if (!result.success) throw new Error(result.message)
 }
 
 export function fetchBookmarkedEventIds() {
@@ -171,13 +131,11 @@ export function fetchBookmarkedEventIds() {
 }
 
 export async function getContestCount(): Promise<number> {
-  const response = await fetch(`${API_BASE_URL}/api/teams`)
-  const result: ApiResponse<{ id: number }[]> = await response.json()
-
-  if (!response.ok || !result.success) {
-    throw new Error(result.message || `조회 실패: ${response.status}`)
-  }
-
+  const result = await requestJson<{ id: number }[]>('/api/teams', {
+    auth: 'optional',
+    fallbackMessage: '조회 실패',
+  })
+  if (!result.success || !result.data) throw new Error(result.message)
   return result.data.length
 }
 

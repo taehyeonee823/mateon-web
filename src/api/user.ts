@@ -1,7 +1,4 @@
-import type { ApiResponse } from './auth'
-import { getAccessToken } from './tokenStorage'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+import { requestJson } from '../lib/apiClient'
 
 export type ParticipatedActivity = {
   id: number
@@ -34,24 +31,11 @@ export type UserProfile = {
 }
 
 export async function getMyProfile() {
-  const accessToken = getAccessToken()
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.')
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/users/me`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const result = await requestJson<UserProfile>('/api/users/me', {
     cache: 'no-store',
+    fallbackMessage: '내 정보 조회 실패',
   })
-
-  const text = await response.text()
-  const result: ApiResponse<UserProfile> | null = text ? JSON.parse(text) : null
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `내 정보 조회 실패: ${response.status}`)
-  }
-
+  if (!result.success || !result.data) throw new Error(result.message)
   return result.data
 }
 
@@ -97,74 +81,34 @@ export function profileToUpdatePayload(profile: UserProfile): UpdateProfilePaylo
 }
 
 export async function updateProfile(payload: UpdateProfilePayload) {
-  const accessToken = getAccessToken()
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.')
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+  const result = await requestJson<UserProfile>('/api/users/me', {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(payload),
+    json: payload,
     cache: 'no-store',
+    fallbackMessage: '회원정보 수정 실패',
   })
-
-  const text = await response.text()
-  const result: ApiResponse<UserProfile> | null = text ? JSON.parse(text) : null
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `회원정보 수정 실패: ${response.status}`)
-  }
-
+  if (!result.success || !result.data) throw new Error(result.message)
   return result.data
 }
 
 export async function uploadProfileImage(file: File) {
-  const accessToken = getAccessToken()
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.')
-  }
-
   const formData = new FormData()
   formData.append('image', file)
 
-  const response = await fetch(`${API_BASE_URL}/api/users/me/profile-image`, {
+  const result = await requestJson<null>('/api/users/me/profile-image', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
     body: formData,
+    fallbackMessage: '프로필 사진 업로드 실패',
   })
-
-  const text = await response.text()
-  const result: ApiResponse<null> | null = text ? JSON.parse(text) : null
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `프로필 사진 업로드 실패: ${response.status}`)
-  }
+  if (!result.success) throw new Error(result.message)
 }
 
 export async function deleteProfileImage() {
-  const accessToken = getAccessToken()
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.')
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/users/me/profile-image`, {
+  const result = await requestJson<null>('/api/users/me/profile-image', {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    fallbackMessage: '프로필 사진 삭제 실패',
   })
-
-  const text = await response.text()
-  const result: ApiResponse<null> | null = text ? JSON.parse(text) : null
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `프로필 사진 삭제 실패: ${response.status}`)
-  }
+  if (!result.success) throw new Error(result.message)
 }
 
 export async function changePassword(
@@ -172,27 +116,12 @@ export async function changePassword(
   newPassword: string,
   newPasswordConfirm: string,
 ) {
-  const accessToken = getAccessToken()
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.')
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/users/password/change`, {
+  const result = await requestJson<unknown>('/api/users/password/change', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({ currentPassword, newPassword, newPasswordConfirm }),
+    json: { currentPassword, newPassword, newPasswordConfirm },
+    fallbackMessage: '비밀번호 변경 실패',
   })
-
-  const text = await response.text()
-  const result: ApiResponse<unknown> | null = text ? JSON.parse(text) : null
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `비밀번호 변경 실패: ${response.status}`)
-  }
+  if (!result.success) throw new Error(result.message)
 }
 
 export type PublicUserProfile = {
@@ -223,19 +152,9 @@ export type PublicUserProfile = {
 
 // 타인의 공개 프로필 조회 (DM 상대방 사진 등에 사용). 본인 이메일 등 민감 정보는 내려오지 않음
 export async function getPublicUserProfile(userId: number): Promise<PublicUserProfile> {
-  const accessToken = getAccessToken()
-  if (!accessToken) throw new Error('로그인이 필요합니다.')
-
-  const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const result = await requestJson<PublicUserProfile>(`/api/users/${userId}`, {
+    fallbackMessage: '사용자 정보 조회 실패',
   })
-
-  const text = await response.text()
-  const result: ApiResponse<PublicUserProfile> | null = text ? JSON.parse(text) : null
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `사용자 정보 조회 실패: ${response.status}`)
-  }
-
+  if (!result.success || !result.data) throw new Error(result.message)
   return result.data
 }

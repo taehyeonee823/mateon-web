@@ -1,14 +1,4 @@
-import type { ApiResponse } from './auth';
-import { getAccessToken } from './tokenStorage';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-// 로그인 없이도 쓸 수 있는 엔드포인트(활동 목록/검색/상세)용 헤더.
-// 토큰이 있으면 실어 보내서 bookmarked를 채워 받고, 없으면 헤더 자체를 생략한다.
-async function optionalAuthHeader(): Promise<HeadersInit> {
-  const accessToken = await getAccessToken();
-  return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
-}
+import { requestJson } from '../lib/apiClient';
 
 export type EventCategory = 'CONTEST' | 'EXTERNAL';
 
@@ -131,18 +121,12 @@ export function formatDateRange(startDate: string, endDate: string): string {
 }
 
 export async function fetchEvents(category: EventCategory, signal?: AbortSignal): Promise<EventItem[]> {
-  const response = await fetch(`${API_BASE_URL}/api/events?category=${category}`, {
-    headers: await optionalAuthHeader(),
+  const result = await requestJson<EventItem[]>(`/api/events?category=${category}`, {
+    auth: 'optional',
     signal,
+    fallbackMessage: '공모전 목록 조회 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<EventItem[]> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `공모전 목록 조회 실패: ${response.status}`);
-  }
-
+  if (!result.success || !result.data) throw new Error(result.message);
   return result.data;
 }
 
@@ -164,18 +148,12 @@ export async function searchEvents(params: EventSearchParams, signal?: AbortSign
   if (params.page !== undefined) query.set('page', String(params.page));
   if (params.size !== undefined) query.set('size', String(params.size));
 
-  const response = await fetch(`${API_BASE_URL}/api/events/search?${query.toString()}`, {
-    headers: await optionalAuthHeader(),
+  const result = await requestJson<EventItem[]>(`/api/events/search?${query.toString()}`, {
+    auth: 'optional',
     signal,
+    fallbackMessage: '활동 검색 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<EventItem[]> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `활동 검색 실패: ${response.status}`);
-  }
-
+  if (!result.success || !result.data) throw new Error(result.message);
   return result.data;
 }
 
@@ -200,28 +178,12 @@ export async function searchAllEvents(
 }
 
 export async function createEvent(payload: EventRegisterPayload): Promise<EventItem> {
-  const accessToken = await getAccessToken();
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/api/events`, {
+  const result = await requestJson<EventItem>('/api/events', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify(payload),
+    json: payload,
+    fallbackMessage: '활동 등록 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<EventItem> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `활동 등록 실패: ${response.status}`);
-  }
-
+  if (!result.success || !result.data) throw new Error(result.message);
   return result.data;
 }
 
@@ -240,35 +202,19 @@ export async function fetchRecommendedEvents(signal?: AbortSignal): Promise<Even
 }
 
 export async function bookmarkEvent(eventId: number): Promise<void> {
-  const accessToken = await getAccessToken();
-
-  const response = await fetch(`${API_BASE_URL}/api/bookmarks/events/${eventId}`, {
+  const result = await requestJson<null>(`/api/bookmarks/events/${eventId}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    fallbackMessage: '북마크 등록 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<null> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `북마크 등록 실패: ${response.status}`);
-  }
+  if (!result.success) throw new Error(result.message);
 }
 
 export async function unbookmarkEvent(eventId: number): Promise<void> {
-  const accessToken = await getAccessToken();
-
-  const response = await fetch(`${API_BASE_URL}/api/bookmarks/events/${eventId}`, {
+  const result = await requestJson<null>(`/api/bookmarks/events/${eventId}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    fallbackMessage: '북마크 해제 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<null> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `북마크 해제 실패: ${response.status}`);
-  }
+  if (!result.success) throw new Error(result.message);
 }
 
 export type FetchBookmarkedEventsParams = {
@@ -281,40 +227,25 @@ export async function fetchBookmarkedEvents(
   params?: FetchBookmarkedEventsParams,
   signal?: AbortSignal
 ): Promise<EventItem[]> {
-  const accessToken = await getAccessToken();
-
   const query = new URLSearchParams();
   if (params?.page !== undefined) query.set('page', String(params.page));
   if (params?.size !== undefined) query.set('size', String(params.size));
 
-  const response = await fetch(`${API_BASE_URL}/api/bookmarks/events?${query.toString()}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const result = await requestJson<EventItem[]>(`/api/bookmarks/events?${query.toString()}`, {
     signal,
+    fallbackMessage: '북마크 목록 조회 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<EventItem[]> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `북마크 목록 조회 실패: ${response.status}`);
-  }
-
+  if (!result.success || !result.data) throw new Error(result.message);
   return result.data;
 }
 
 export async function fetchEventDetail(id: number, signal?: AbortSignal): Promise<EventItem> {
-  const response = await fetch(`${API_BASE_URL}/api/events/${id}`, {
-    headers: await optionalAuthHeader(),
+  const result = await requestJson<EventItem>(`/api/events/${id}`, {
+    auth: 'optional',
     signal,
+    fallbackMessage: '활동 상세 조회 실패',
   });
-
-  const text = await response.text();
-  const result: ApiResponse<EventItem> | null = text ? JSON.parse(text) : null;
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `활동 상세 조회 실패: ${response.status}`);
-  }
-
+  if (!result.success || !result.data) throw new Error(result.message);
   return result.data;
 }
 
@@ -323,39 +254,21 @@ export async function extractEventImage(
   image: File,
   signal?: AbortSignal
 ): Promise<EventExtractionDraft> {
-  const accessToken = await getAccessToken();
-
-  if (!accessToken) {
-    throw new Error('로그인이 필요합니다.');
-  }
-
   const formData = new FormData();
   formData.append('image', image, image.name);
 
-  const response = await fetch(`${API_BASE_URL}/api/events/extract-image`, {
+  const result = await requestJson<EventExtractionDraft>('/api/events/extract-image', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
     body: formData,
     signal,
+    fallbackMessage: '이미지 추출 실패',
   });
 
-  if (response.status === 413) {
-    throw new Error('이미지 용량이 너무 커요. 1MB 이하로 줄여서 다시 시도해주세요.');
-  }
-
-  const text = await response.text();
-
-  let result: ApiResponse<EventExtractionDraft> | null = null;
-  try {
-    result = text ? JSON.parse(text) : null;
-  } catch {
-    throw new Error(`이미지 분석 중 오류가 발생했어요. (status: ${response.status})`);
-  }
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `이미지 추출 실패: ${response.status}`);
+  if (!result.success || !result.data) {
+    if (result.status === 413) {
+      throw new Error('이미지 용량이 너무 커요. 1MB 이하로 줄여서 다시 시도해주세요.');
+    }
+    throw new Error(result.message);
   }
 
   return result.data;
@@ -425,26 +338,22 @@ export async function fetchEventSimilarityMap(
   const query = new URLSearchParams();
   if (params?.topN !== undefined) query.set('topN', String(params.topN));
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/events/${eventId}/similarity-map?${query.toString()}`,
+  const result = await requestJson<EventSimilarityMap>(
+    `/api/events/${eventId}/similarity-map?${query.toString()}`,
     {
-      headers: await optionalAuthHeader(),
+      auth: 'optional',
       signal,
-    }
+      fallbackMessage: '유사도 지도 조회 실패',
+    },
   );
 
-  const text = await response.text();
-  const result: (ApiResponse<EventSimilarityMap> & { code?: string }) | null = text
-    ? JSON.parse(text)
-    : null;
-
-  if (!response.ok || !result?.success) {
-    if (response.status === 400 && result?.code === 'EVENT_EMBEDDING_NOT_READY') {
+  if (!result.success || !result.data) {
+    if (result.status === 400 && result.code === 'EVENT_EMBEDDING_NOT_READY') {
       throw new EventEmbeddingNotReadyError(
-        result?.message || '아직 기준 활동의 임베딩이 준비되지 않았어요.'
+        result.message || '아직 기준 활동의 임베딩이 준비되지 않았어요.',
       );
     }
-    throw new Error(result?.message || `유사도 지도 조회 실패: ${response.status}`);
+    throw new Error(result.message);
   }
 
   return result.data;

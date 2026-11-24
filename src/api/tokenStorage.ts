@@ -18,6 +18,11 @@ export function getRefreshToken() {
   return localStorage.getItem(REFRESH_TOKEN_KEY) ?? sessionStorage.getItem(REFRESH_TOKEN_KEY)
 }
 
+// "로그인 상태 유지"로 저장된 세션인지. 갱신 후에도 같은 저장소에 다시 넣기 위해 쓴다.
+export function isPersistentSession() {
+  return localStorage.getItem(REFRESH_TOKEN_KEY) != null
+}
+
 export function clearTokens() {
   for (const storage of [localStorage, sessionStorage]) {
     storage.removeItem(ACCESS_TOKEN_KEY)

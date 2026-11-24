@@ -1,7 +1,4 @@
-import type { ApiResponse } from './auth'
-import { getAccessToken } from './tokenStorage'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+import { requestJson } from '../lib/apiClient'
 
 export type MatchingIntentExtracted = {
   desiredRoles: string[]
@@ -22,24 +19,11 @@ export type MatchingIntentData = {
 }
 
 export async function sendChatbotMessage(message: string): Promise<MatchingIntentData> {
-  const accessToken = getAccessToken()
-  if (!accessToken) throw new Error('로그인이 필요합니다.')
-
-  const response = await fetch(`${API_BASE_URL}/api/matching/intents/messages`, {
+  const result = await requestJson<MatchingIntentData>('/api/matching/intents/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({ message }),
+    json: { message },
+    fallbackMessage: '챗봇 응답 실패',
   })
-
-  const text = await response.text()
-  const result: ApiResponse<MatchingIntentData> | null = text ? JSON.parse(text) : null
-
-  if (!response.ok || !result?.success) {
-    throw new Error(result?.message || `챗봇 응답 실패: ${response.status}`)
-  }
-
+  if (!result.success || !result.data) throw new Error(result.message)
   return result.data
 }

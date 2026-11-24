@@ -5,6 +5,8 @@ import { clearTokens, getAccessToken } from '../api/tokenStorage'
 type AuthContextValue = {
   profile: UserProfile | null
   isLoggedIn: boolean
+  // 첫 프로필 조회가 끝나기 전에는 true. 가드는 이 값이 false일 때만 로그인 화면으로 보낸다.
+  loading: boolean
   refresh: () => Promise<void>
   logout: () => void
 }
@@ -13,10 +15,13 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  // 토큰이 있을 때만 첫 조회를 기다리므로, 토큰이 없으면 바로 false로 시작한다
+  const [loading, setLoading] = useState<boolean>(() => !!getAccessToken())
 
   const refresh = async () => {
     if (!getAccessToken()) {
       setProfile(null)
+      setLoading(false)
       return
     }
     try {
@@ -25,6 +30,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       clearTokens()
       setProfile(null)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -38,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ profile, isLoggedIn: !!profile, refresh, logout }}>
+    <AuthContext.Provider value={{ profile, isLoggedIn: !!profile, loading, refresh, logout }}>
       {children}
     </AuthContext.Provider>
   )
