@@ -14,6 +14,7 @@ export default function CreateTeamInfo() {
     promotionText,
     recruitmentStartDate,
     recruitmentEndDate,
+    selectedEvent: storedSelectedEvent,
     setField,
   } = useCreateTeamStore()
 
@@ -21,12 +22,15 @@ export default function CreateTeamInfo() {
   const [searchResults, setSearchResults] = useState<EventItem[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
-  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(preselectedEvent)
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(
+    preselectedEvent ?? storedSelectedEvent,
+  )
 
   useEffect(() => {
     if (!preselectedEvent) return
     setSelectedEvent(preselectedEvent)
     setField('eventId', preselectedEvent.id)
+    setField('selectedEvent', preselectedEvent)
   }, [preselectedEvent, setField])
 
   const dateError =
@@ -59,6 +63,7 @@ export default function CreateTeamInfo() {
   const handleSelectEvent = (event: EventItem) => {
     setSelectedEvent(event)
     setField('eventId', event.id)
+    setField('selectedEvent', event)
     setShowResults(false)
     setSearchKeyword('')
   }
@@ -127,6 +132,7 @@ export default function CreateTeamInfo() {
                     onClick={() => {
                       setSelectedEvent(null)
                       setField('eventId', null)
+                      setField('selectedEvent', null)
                     }}
                     className="h-12 shrink-0 rounded-lg border border-[#E1E2EA] bg-white px-5 text-sm font-semibold text-[#1B1B33] hover:bg-[#F5F5F9]"
                   >
