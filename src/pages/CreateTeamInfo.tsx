@@ -74,7 +74,7 @@ export default function CreateTeamInfo() {
             <header>
               <h1 className="text-[32px] font-extrabold tracking-tight text-[#1B1B33]">팀 만들기</h1>
               <p className="mt-3 text-base text-[#1B1B33]">
-                공모전/대외활동을 함께할 팀원을 모집해보세요.
+                함께할 팀원을 모아보세요. 만들고 나면 팀원을 추천해 드려요.
               </p>
             </header>
 
