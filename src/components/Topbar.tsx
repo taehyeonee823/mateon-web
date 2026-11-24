@@ -265,7 +265,7 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
         </div>
 
         {/* PC 미만: 메뉴 버튼 */}
-        {isLoggedIn && <button
+        <button
           type="button"
           onClick={menuDrawer.open}
           aria-label="메뉴 열기"
@@ -273,7 +273,7 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
           className="flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-brand-50 @desktop:hidden"
         >
           <MenuIcon className="h-6 w-6" />
-        </button>}
+        </button>
       </div>
     </div>
     </header>
