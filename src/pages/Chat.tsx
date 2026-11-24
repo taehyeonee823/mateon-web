@@ -1,16 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../hooks/useChat';
 import { Composer, MessageList, RoomAvatar, RoomList } from '../components/chat/ChatParts';
 
 export default function ChatPage() {
+  const location = useLocation();
   const { profile } = useAuth();
   const currentUserId = profile?.id;
   const chat = useChat();
   const { selectedRoom } = chat;
+  const requestedRoomId = (location.state as { roomId?: number } | null)?.roomId;
 
   // 채팅 말풍선 글자 크기 조절 (기본 14px = text-sm)
   const [chatFontSize, setChatFontSize] = useState(14);
+
+  useEffect(() => {
+    if (typeof requestedRoomId === 'number' && Number.isInteger(requestedRoomId)) {
+      chat.setSelectedRoomId(requestedRoomId);
+    }
+  }, [chat.setSelectedRoomId, requestedRoomId]);
 
   return (
     // 좌우 여백을 두고 채팅 영역을 카드로 감싼다 (화면이 좁아지면 여백을 줄임)

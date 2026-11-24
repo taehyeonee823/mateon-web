@@ -196,9 +196,29 @@ export async function changePassword(
 }
 
 export type PublicUserProfile = {
-  id: number
+  userId: number
   name: string
   profileImageUrl: string | null
+  activityStyle: string | null
+  campus: string | null
+  collaborationReviewCount: number
+  collaborationTemperature: number | null
+  college: string | null
+  desiredRoles: string[]
+  experienceLevel: string | null
+  grade: string | null
+  interestJobPrimary: string | null
+  interestJobSecondary: string | null
+  interestJobTertiary: string | null
+  isMe: boolean
+  major: string | null
+  me: boolean
+  participatedActivities: { category: string; id: number; title: string }[]
+  portfolio: string | null
+  school: string | null
+  schoolVerified: boolean
+  skills: string[]
+  tagline: string | null
 }
 
 // 타인의 공개 프로필 조회 (DM 상대방 사진 등에 사용). 본인 이메일 등 민감 정보는 내려오지 않음
