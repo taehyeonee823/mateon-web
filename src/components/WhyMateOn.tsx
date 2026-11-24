@@ -6,17 +6,17 @@ gsap.registerPlugin(ScrollTrigger)
 
 const REASONS = [
   {
-    image: '/landing_img/teamFind.png',
+    image: '/landing_img/tb.png',
     title: '팀 빌딩과 매칭',
     desc: '관심 분야와 활동 이력을 분석해서 지금 가장 잘 맞는 팀과 팀원을 추천해줘요. 우리 팀에 가장 필요한 인재들을 AI가 추천해줘요.',
   },
   {
-    image: '/landing_img/chatBot.png',
+    image: '/landing_img/tm.png',
     title: '모집 · 지원글 작성',
     desc: '어디서부터 시작해야 할지 모르는 팀 빌딩과 지원, 이제 모집글과 지원글 AI가 모두 작성해줘요.',
   },
   {
-    image: '/landing_img/aiReport.png',
+    image: '/landing_img/mp.png',
     title: '개인 포트폴리오 분석',
     desc: '나의 활동 이력을 제출하고 그 바탕으로 AI가 강점을 분석해줘요.',
   },
@@ -103,7 +103,7 @@ export default function WhyMateOn() {
   }, [])
 
   return (
-    <section ref={sectionRef} className="px-6 py-32">
+    <section ref={sectionRef} className="px-24 py-32">
       <h2
         ref={titleRef}
         className="mx-auto max-w-3xl text-center text-4xl font-bold leading-tight text-white sm:text-6xl"
@@ -111,7 +111,7 @@ export default function WhyMateOn() {
         AI 드림이의 맞춤 기능
       </h2>
 
-      <div ref={reasonsRef} className="mx-auto mt-24 flex max-w-5xl flex-col gap-24">
+      <div ref={reasonsRef} className="mx-auto mt-24 flex w-full flex-col gap-24">
         {REASONS.map((reason, i) => (
           <div
             key={reason.title}
@@ -122,7 +122,7 @@ export default function WhyMateOn() {
             <img
               src={reason.image}
               alt=""
-              className="h-[44rem] w-auto shrink-0 object-contain"
+              className="h-[35.2rem] w-auto shrink-0 object-contain"
             />
             <div className="text-center sm:text-left">
               <p className="text-3xl font-bold text-white sm:text-5xl">{reason.title}</p>

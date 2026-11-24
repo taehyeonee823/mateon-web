@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import SlideInPanel from '../SlideInPanel'
 import { useAuth } from '../../context/AuthContext'
 import { useChatPanel } from '../../context/ChatPanel'
-import { useChat } from '../../hooks/useChat'
+import { useChatContext } from '../../context/Chat'
 import { Composer, MessageList, RoomAvatar, RoomList } from './ChatParts'
 
 function CloseIcon({ className = '' }: { className?: string }) {
@@ -34,7 +34,8 @@ function ExpandIcon({ className = '' }: { className?: string }) {
 function ChatPanelBody() {
   const { profile } = useAuth()
   const { close } = useChatPanel()
-  const chat = useChat({ autoSelectFirst: false })
+  const chat = useChatContext()
+  if (!chat) return null
   const { selectedRoom } = chat
 
   return (

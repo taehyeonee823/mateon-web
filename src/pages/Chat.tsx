@@ -1,15 +1,24 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useChat } from '../hooks/useChat';
+import { useChatContext, type ChatContextValue } from '../context/Chat';
 import { Composer, MessageList, RoomAvatar, RoomList } from '../components/chat/ChatParts';
 import { getPublicUserProfile, type PublicUserProfile } from '../api/user';
 
 export default function ChatPage() {
+  const chatContext = useChatContext();
+  if (!chatContext) {
+    return (
+      <div className="flex h-full items-center justify-center text-slate-400">로그인 후 이용할 수 있어요.</div>
+    );
+  }
+  return <ChatPageBody chat={chatContext} />;
+}
+
+function ChatPageBody({ chat }: { chat: ChatContextValue }) {
   const location = useLocation();
   const { profile } = useAuth();
   const currentUserId = profile?.id;
-  const chat = useChat();
   const { selectedRoom } = chat;
   const requestedRoomId = (location.state as { roomId?: number } | null)?.roomId;
 
@@ -21,6 +30,13 @@ export default function ChatPage() {
       chat.setSelectedRoomId(requestedRoomId);
     }
   }, [chat.setSelectedRoomId, requestedRoomId]);
+
+  // 전체 화면 채팅에서는 방을 고르지 않았을 때 첫 방을 자동 선택한다 (Context는 자동 선택을 하지 않음)
+  useEffect(() => {
+    if (chat.selectedRoomId == null && chat.rooms.length > 0) {
+      chat.setSelectedRoomId(chat.rooms[0].roomId);
+    }
+  }, [chat.selectedRoomId, chat.rooms, chat.setSelectedRoomId]);
 
   // 프로필 팝업: 버튼을 누르면 대화 상대의 공개 프로필을 불러와 띄운다
   const [profileOpen, setProfileOpen] = useState(false);

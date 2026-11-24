@@ -96,13 +96,12 @@ export function useChat({ autoSelectFirst = true }: { autoSelectFirst?: boolean 
         const list = data as StompChatMessage[];
         setMessages(list);
 
-        const lastMessage = list[list.length - 1];
-        if (lastMessage) {
-          markChatAsRead(selectedRoomId, lastMessage.messageId);
-          setRooms((prev) =>
-            prev.map((r) => (r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)),
-          );
-        }
+        // 메시지가 없으면 0을 보내 서버의 읽음 위치를 맞춘다
+        const lastReadMessageId = list.length > 0 ? list[list.length - 1].messageId : 0;
+        markChatAsRead(selectedRoomId, lastReadMessageId);
+        setRooms((prev) =>
+          prev.map((r) => (r.roomId === selectedRoomId ? { ...r, unreadCount: 0 } : r)),
+        );
       })
       .catch((e) => {
         if (e.name !== 'AbortError') console.error(e);

@@ -116,7 +116,7 @@ export function RoomList({
               <div className="mt-1 flex items-center justify-between gap-2">
                 <p className="truncate text-sm text-slate-500">{room.lastMessage}</p>
                 {room.unreadCount > 0 && (
-                  <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[11px] font-semibold text-white">
+                  <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-semibold text-white">
                     {room.unreadCount}
                   </span>
                 )}

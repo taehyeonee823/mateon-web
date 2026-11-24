@@ -28,12 +28,14 @@ import ChatPanel from './components/chat/ChatPanel'
 import NotificationPanel from './components/NotificationPanel'
 import { SidePanelProvider } from './context/SidePanel'
 import { NotificationsProvider } from './context/Notifications'
+import { ChatProvider } from './context/Chat'
 import RequireAuth from './components/RequireAuth'
 
 function App() {
   return (
     <SidePanelProvider>
     <NotificationsProvider>
+    <ChatProvider>
     {/* 채팅/알림 패널이 열리면 페이지는 왼쪽 컬럼으로 줄어들고 오른쪽에 패널이 붙는다 */}
     <div className="flex min-h-screen">
     <div className="min-w-0 flex-1">
@@ -98,6 +100,7 @@ function App() {
     <ChatPanel />
     <NotificationPanel />
     </div>
+    </ChatProvider>
     </NotificationsProvider>
     </SidePanelProvider>
   )

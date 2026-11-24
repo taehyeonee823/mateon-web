@@ -5,6 +5,7 @@ import NotificationRow from './NotificationRow'
 import { useAuth } from '../context/AuthContext'
 import { useNotifications } from '../context/Notifications'
 import { useSidePanel } from '../context/SidePanel'
+import { useChatContext } from '../context/Chat'
 
 const NAV_TABS = [
   { label: '공모전', path: '/contest' },
@@ -65,6 +66,7 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
   const { isLoggedIn, profile, logout } = useAuth()
   const { active: activePanel, open: openPanel, toggle: togglePanel } = useSidePanel()
   const { grouped: groupedNotifications, hasUnread } = useNotifications()
+  const chatContext = useChatContext()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -176,7 +178,7 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
             className={iconButtonClass(isNotificationPanelOpen)}
           >
             <img src="/noti/notification_line.svg" alt="" className="h-6 w-6" />
-            {hasUnread && (
+            {(hasUnread || (chatContext?.totalUnread ?? 0) >= 1) && (
               <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-rose-500" />
             )}
           </button>
@@ -229,6 +231,7 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
             isLoggedIn ? 'hidden @desktop:flex' : 'flex'
           } items-center gap-2 @desktop:gap-6`}
         >
+          
           {isLoggedIn && profile ? (
             <>
               <Link to="/my" aria-label="마이페이지" className="flex shrink-0 items-center gap-2 rounded-full transition-opacity hover:opacity-80">
@@ -236,7 +239,6 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
                 <span className="text-base font-semibold text-black">{profile.name}</span>
               </Link>
 
-              {/* 바로 로그아웃할 수 있는 버튼 */}
               <button
                 type="button"
                 onClick={handleLogout}
@@ -248,20 +250,21 @@ export default function Topbar({ transparent = false }: { transparent?: boolean 
           ) : (
             <>
               <Link
-                to="/login"
-                className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-3 py-2 text-xs font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white @desktop:px-4 @desktop:text-sm"
-              >
-                로그인
-              </Link>
-
-              <Link
                 to="/signup"
                 className="flex shrink-0 items-center gap-2 rounded-full bg-[#4D4DF1] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#3D3DD9] @desktop:px-4 @desktop:text-sm"
               >
                 무료로 시작하기
               </Link>
+
+              <Link
+                to="/login"
+                className="flex shrink-0 items-center gap-2 rounded-full bg-gray-200 px-3 py-2 text-xs font-semibold text-brand-900 transition-colors hover:bg-brand-500 hover:text-white @desktop:px-4 @desktop:text-sm"
+              >
+                로그인
+              </Link>
             </>
           )}
+
         </div>
 
         {/* PC 미만: 메뉴 버튼 */}
