@@ -33,6 +33,7 @@ export default function TeamDetail() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabKey>('info')
   const [isApplicationModalOpen, setIsApplicationModalOpen] = useState(false)
+  const [isSubmittedModalOpen, setIsSubmittedModalOpen] = useState(false)
   const visibleTabs = team?.leader ? TABS : TABS.filter((tab) => tab.key === 'info')
 
   useEffect(() => {
@@ -211,11 +212,60 @@ export default function TeamDetail() {
                 : current,
             )
             setIsApplicationModalOpen(false)
+            setIsSubmittedModalOpen(true)
           }}
         />
       )}
+      {isSubmittedModalOpen && (
+        <ApplicationSubmittedModal onClose={() => setIsSubmittedModalOpen(false)} />
+      )}
     </div>
   )
+}
+
+// 지원 완료 안내 모달. PrivacyConsentModal과 같은 오버레이·카드·버튼 스타일을 쓴다.
+function ApplicationSubmittedModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6"
+      onClick={onClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="application-submitted-title"
+        onClick={(e) => e.stopPropagation()}
+        className="flex w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+      >
+        <header className="px-6 pb-4 pt-6">
+          <h2 id="application-submitted-title" className="text-xl font-bold text-brand-900">
+            지원이 완료되었어요
+          </h2>
+          <p className="mt-1 text-sm text-[#6F7095]">
+            팀장이 지원서를 검토하면 결과를 알려드릴게요.
+          </p>
+        </header>
+
+        <footer className="px-6 pb-6 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-14 w-full rounded-xl bg-[#2554F0] text-lg font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            확인
+          </button>
+        </footer>
+      </section>
+    </div>
+  )
+}
+
+// 숫자만 남기고 010-1234-5678 형태로 하이픈을 자동으로 넣는다 (최대 11자리)
+function formatPhoneNumber(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  if (digits.length < 4) return digits
+  if (digits.length < 8) return `${digits.slice(0, 3)}-${digits.slice(3)}`
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
 }
 
 function TeamApplicationModal({
@@ -268,6 +318,11 @@ function TeamApplicationModal({
     event.preventDefault()
     if (submitting) return
 
+    if (contactNumber.replace(/\D/g, '').length !== 11) {
+      setError('전화번호를 정확히 입력해주세요. (숫자 11자리)')
+      return
+    }
+
     const payload: TeamApplicationRequest = {
       introduction: introduction.trim(),
       message: message.trim(),
@@ -315,7 +370,7 @@ function TeamApplicationModal({
 
         <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
           <label className="text-sm font-semibold text-brand-700">
-            자기소개
+            자기소개  <span className="text-rose-500">*</span>
             {shouldGenerateAiDraft && draftLoading && (
               <span className="mt-1 block text-xs font-normal text-brand-400">AI 초안을 불러오는 중이에요…</span>
             )}
@@ -331,7 +386,7 @@ function TeamApplicationModal({
           </label>
 
           <label className="text-sm font-semibold text-brand-700">
-            지원 메시지
+            지원 메시지 <span className="text-rose-500">*</span>
             {shouldGenerateAiDraft && (
               <>
                 <span className="mt-1.5 block rounded-xl bg-blue-50 p-3 text-xs font-normal leading-5 text-blue-600">
@@ -381,11 +436,14 @@ function TeamApplicationModal({
           </label>
 
           <label className="text-sm font-semibold text-brand-700">
-            연락처 <span className="font-normal text-brand-400">(선택)</span>
+            연락처 <span className="text-rose-500">*</span>
             <input
               type="tel"
+              required
+              pattern="\d{3}-\d{4}-\d{4}"
+              title="전화번호를 정확히 입력해주세요. (예: 010-1234-5678)"
               value={contactNumber}
-              onChange={(event) => setContactNumber(event.target.value)}
+              onChange={(event) => setContactNumber(formatPhoneNumber(event.target.value))}
               disabled={submitting}
               className="mt-1.5 h-11 w-full rounded-xl border border-brand-100 px-3 text-sm font-normal text-brand-900 outline-none focus:border-brand-300"
               placeholder="연락 가능한 전화번호"
@@ -417,7 +475,7 @@ function TeamApplicationModal({
             </button>
             <button
               type="submit"
-              disabled={submitting || (shouldGenerateAiDraft && draftLoading) || !message.trim()}
+              disabled={submitting || (shouldGenerateAiDraft && draftLoading)}
               className="rounded-lg bg-brand-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-wait disabled:opacity-50"
             >
               {submitting ? '제출 중...' : '지원서 제출'}
