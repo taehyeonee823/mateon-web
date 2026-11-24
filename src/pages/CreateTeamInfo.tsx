@@ -266,9 +266,9 @@ export default function CreateTeamInfo() {
               <h3 className="text-[15px] font-bold text-[#1B1B33]">만들기 전에 알아두세요</h3>
               <ol className="mt-5 flex flex-col gap-6">
                 {[
-                  ['활동 하나를 선택하세요', '공모전 또는 대외활동을 선택하면 팀 모집과 함께 표시돼요.'],
-                  ['모집 기간을 정하세요', '시작일과 마감일은 팀 모집글에 표시돼요.'],
-                  ['다음은 모집 포지션이에요', '어떤 역할과 인원을 모집할지 정해요.'],
+                  ['활동 하나에 팀 하나', '같은 활동으로는 팀을 하나만 만들 수 있어요.'],
+                  ['드림이가 팀을 추천해줘요', '자세히 쓸수록 드림이가 더 잘 맞는 팀원을 찾아드려요.'],
+                  ['마감되면 모집이 끝나요', '모집 마감일이 지나면 팀 목록에서 자동으로 빠져요.'],
                 ].map(([tipTitle, description], index) => (
                   <li key={tipTitle} className="flex gap-3">
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EEF0FC] text-xs font-semibold text-[#4D4DF1]">
