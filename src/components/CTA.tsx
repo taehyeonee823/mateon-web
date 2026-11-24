@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
+import { Link } from 'react-router-dom'
 import FloatingImages from './FloatingImages'
 import { ChevronDownIcon } from './icons'
 import { getContestCount } from '../api/activity'
@@ -96,7 +97,6 @@ export default function CTA() {
               <div ref={statsRef} className="mt-3 flex gap-8">
                 {[
                   { label: '등록된 팀', value: contestCount },
-                  { label: '회원 수', value: null as number | null },
                 ].map((stat) => (
                   <div key={stat.label}>
                     <p className="stat-number text-4xl font-extrabold leading-none text-[#2554F0] sm:text-5xl">
@@ -109,17 +109,17 @@ export default function CTA() {
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <a
-                href="#contact"
+              <Link
+                to="/login"
                 className="flex items-center gap-2 rounded-2xl bg-black px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
               >
                 <img
-                  src="/landing_img/appleLogo.png"
+                  src="/landing_img/vercel.svg"
                   alt=""
-                  className="h-5 w-4 object-cover invert"
+                  className="w-14 object-cover invert"
                 />
-                TestFlight로 시작하기
-              </a>
+                로 시작하기
+              </Link>
             </div>
           </div>
         </div>
