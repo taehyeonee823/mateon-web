@@ -290,7 +290,18 @@ export default function ContestDetailPage() {
     }
   }
 
-  const goCreateTeam = () => navigate('/teams/new', { state: { event } })
+  const goCreateTeam = () => {
+    if (!isLoggedIn) {
+      navigate('/login', {
+        state: {
+          returnTo: '/teams/new',
+          event,
+        },
+      })
+      return
+    }
+    navigate('/teams/new', { state: { event } })
+  }
 
   if (loading) {
     return (

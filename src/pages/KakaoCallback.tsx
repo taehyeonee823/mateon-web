@@ -5,6 +5,7 @@ import Footer from '../components/Footer'
 import { loginWithKakao } from '../api/auth'
 import { clearSignupConsent, isRequiredConsentGiven, readSignupConsent } from '../lib/consent'
 import { useAuth } from '../context/AuthContext'
+import { consumeTeamCreateEvent } from '../utils/teamCreateLogin'
 
 const KAKAO_JS_KEY = import.meta.env.VITE_KAKAO_JS_KEY as string | undefined
 
@@ -64,7 +65,14 @@ export default function KakaoCallback() {
         clearSignupConsent()
         return refresh()
       })
-      .then(() => navigate('/'))
+      .then(() => {
+        const event = consumeTeamCreateEvent()
+        if (event) {
+          navigate('/teams/new', { replace: true, state: { event } })
+        } else {
+          navigate('/', { replace: true })
+        }
+      })
       .catch((err) => {
         setError(err instanceof Error ? err.message : '잠시 후 다시 시도해주세요.')
       })
