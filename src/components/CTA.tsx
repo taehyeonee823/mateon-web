@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import FloatingImages from './FloatingImages'
 import { ChevronDownIcon } from './icons'
 import { getContestCount } from '../api/activity'
+import { useAuth } from '../context/AuthContext'
 
 function formatToday() {
   const now = new Date()
@@ -20,6 +21,7 @@ const LINES = [
 ]
 
 export default function CTA() {
+  const { isLoggedIn } = useAuth()
   const titleRef = useRef<HTMLHeadingElement>(null)
   const statsRef = useRef<HTMLDivElement>(null)
   const [contestCount, setContestCount] = useState<number | null>(null)
@@ -108,6 +110,7 @@ export default function CTA() {
               </div>
             </div>
 
+            {!isLoggedIn && (
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 to="/login"
@@ -121,6 +124,7 @@ export default function CTA() {
                 로 시작하기
               </Link>
             </div>
+            )}
           </div>
         </div>
 
