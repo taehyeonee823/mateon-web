@@ -114,14 +114,9 @@ export default function CTA() {
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 to="/login"
-                className="flex items-center gap-2 rounded-2xl bg-black px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+                className="flex items-center gap-2 rounded-2xl bg-white border border-[#2554F0] px-7 py-3.5 text-sm font-semibold text-[#2554F0] transition-transform hover:-translate-y-0.5"
               >
-                <img
-                  src="/landing_img/vercel.svg"
-                  alt=""
-                  className="w-14 object-cover invert"
-                />
-                로 시작하기
+                LogIn해서 시작하기
               </Link>
             </div>
             )}
@@ -131,11 +126,11 @@ export default function CTA() {
                 className="flex items-center gap-2 rounded-2xl bg-[#2554F0] px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
               >
                 <img
-                  src="/landing_img/dreamy.svg"
+                  src="/landing_img/dreamy.png"
                   alt=""
                   className="w-8 object-cover"
                 />
-                팀 빌딩 시작하기
+                팀 빌딩
               </Link>
             </div>
           </div>
