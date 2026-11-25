@@ -125,6 +125,19 @@ export default function CTA() {
               </Link>
             </div>
             )}
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link
+                to="/teams"
+                className="flex items-center gap-2 rounded-2xl bg-[#2554F0] px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+              >
+                <img
+                  src="/landing_img/dreamy.svg"
+                  alt=""
+                  className="w-8 object-cover"
+                />
+                팀 빌딩 시작하기
+              </Link>
+            </div>
           </div>
         </div>
 
